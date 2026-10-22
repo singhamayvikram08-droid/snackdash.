@@ -1,0 +1,57 @@
+<!doctype html>
+<html lang="en" class="scroll-smooth">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+
+    <!-- Favicon & Icons -->
+    <link rel="icon" type="image/x-icon" href="/favicon.ico" />
+    <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+    <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
+
+    <!-- Primary SEO Meta Tags -->
+    <title>NexGen — 3D Autonomous Cloud &amp; Neural Development Engine</title>
+    <meta name="title" content="NexGen — 3D Autonomous Cloud &amp; Neural Development Engine" />
+    <meta name="description" content="Build, deploy, and scale in a synchronized 3D spatial environment. Sub-millisecond latency, quantum-encrypted clusters, and distributed neural computing." />
+    <meta name="keywords" content="NexGen, 3D Cloud, Spatial Computing, Neural Engine, Autonomous SaaS, WebGPU, Cloud Infrastructure, Developer Tools" />
+    <meta name="author" content="NexGen Technologies" />
+    <meta name="robots" content="index, follow" />
+    <meta name="theme-color" content="#00f0ff" />
+    <link rel="canonical" href="https://nexgen.io/" />
+
+    <!-- Security & HTTPS Enforcement (Production Only) -->
+    <script>
+      // Enforce HTTPS redirect on non-localhost production environments
+      if (location.protocol === 'http:' && location.hostname !== 'localhost' && location.hostname !== '127.0.0.1' && !location.hostname.endsWith('.local')) {
+        location.replace('https:' + window.location.href.substring(window.location.protocol.length));
+      }
+    </script>
+
+    <!-- Open Graph / Facebook -->
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content="https://nexgen.io/" />
+    <meta property="og:title" content="NexGen — 3D Autonomous Cloud &amp; Neural Development Engine" />
+    <meta property="og:description" content="Build, deploy, and scale in a synchronized 3D spatial environment with sub-millisecond edge latency." />
+    <meta property="og:image" content="/og-image.svg" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+
+    <!-- Twitter -->
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:url" content="https://nexgen.io/" />
+    <meta name="twitter:title" content="NexGen — 3D Autonomous Cloud &amp; Neural Development Engine" />
+    <meta name="twitter:description" content="Build, deploy, and scale in a synchronized 3D spatial environment with sub-millisecond edge latency." />
+    <meta name="twitter:image" content="/og-image.svg" />
+
+    <!-- Performance: Google Fonts Preconnect & Async Display -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Poppins:wght@500;600;700;800;900&family=Space+Grotesk:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+  </head>
+  <body class="bg-[#030305] text-white selection:bg-[#00f0ff] selection:text-black min-h-screen">
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>

@@ -1,0 +1,279 @@
+:root {
+  --primary-color: #ff0055;
+  --bg-color: #05050a;
+  --text-main: #ffffff;
+  --text-muted: #888899;
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family: 'Outfit', sans-serif;
+  background-color: #000;
+  color: var(--text-main);
+  overflow: hidden; /* No scrolling, pure fullscreen */
+  width: 100vw;
+  height: 100vh;
+}
+
+/* Beautiful cinematic vignette over the background */
+body::after {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; width: 100vw; height: 100vh;
+  box-shadow: inset 0 0 150px rgba(0,0,0,0.9);
+  pointer-events: none;
+  z-index: 1; /* Covers webcam specifically */
+}
+
+#gl-canvas {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  z-index: 2; /* Over webcam */
+  pointer-events: none; /* Let touches pass if needed */
+  mix-blend-mode: screen; /* Makes black fully transparent! */
+}
+
+#drawing-canvas {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  z-index: 3; /* Over gl-canvas */
+  pointer-events: none; /* Let touches pass if needed */
+  filter: drop-shadow(0 0 10px rgba(0, 240, 255, 0.8));
+}
+
+.webcam-bg {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  object-fit: cover;
+  z-index: 0; /* Below vignette */
+  transform: scaleX(-1); /* mirror webcam normally */
+  filter: brightness(0.4) contrast(1.3) saturate(1.3); /* Darken camera to let neon pop */
+}
+
+#toolbar {
+  position: absolute;
+  bottom: 30px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 20;
+  display: flex;
+  gap: 15px;
+  background: rgba(15, 15, 20, 0.6);
+  padding: 10px 20px;
+  border-radius: 50px;
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+  transition: opacity 0.5s ease;
+}
+
+#toolbar button {
+  padding: 0.8rem 1.5rem;
+  font-size: 1.1rem;
+  letter-spacing: 0.5px;
+  box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+}
+
+#toolbar button:hover {
+  transform: translateY(-2px);
+}
+
+#prediction-label {
+  position: absolute;
+  top: 40px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 20;
+  font-size: 1.8rem;
+  font-weight: 700;
+  color: #fff;
+  background: rgba(10, 10, 15, 0.4);
+  padding: 15px 40px;
+  border-radius: 50px;
+  backdrop-filter: blur(15px);
+  -webkit-backdrop-filter: blur(15px);
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.6), inset 0 1px 0 rgba(255,255,255,0.1);
+  border: 1px solid rgba(255,255,255,0.05);
+  animation: floatDown 0.5s cubic-bezier(0.1, 0.9, 0.2, 1);
+}
+
+#prediction-text {
+  background: linear-gradient(135deg, #00f0ff, #fff);
+  -webkit-background-clip: text;
+  background-clip: text; /* standard property */
+  -webkit-text-fill-color: transparent;
+  text-transform: capitalize;
+}
+
+@keyframes floatDown {
+  0% { transform: translate(-50%, -20px); opacity: 0; }
+  100% { transform: translate(-50%, 0); opacity: 1; }
+}
+
+.ui-layer {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none; /* Let clicks pass through when UI is hidden */
+}
+
+/* Make inner UI clickable */
+.ui-layer > * {
+  pointer-events: auto;
+}
+
+.glass-panel {
+  background: rgba(15, 15, 20, 0.6);
+  backdrop-filter: blur(15px);
+  -webkit-backdrop-filter: blur(15px);
+  padding: 3rem 4rem;
+  border-radius: 20px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.2);
+  text-align: center;
+  transition: opacity 0.5s ease, transform 0.5s ease;
+}
+
+h1 {
+  font-size: 4rem;
+  font-weight: 700;
+  margin-bottom: 1rem;
+  background: linear-gradient(135deg, #00f0ff, #ff0055);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  letter-spacing: -2px;
+}
+
+p {
+  font-size: 1.2rem;
+  font-weight: 300;
+  color: var(--text-muted);
+  max-width: 400px;
+  margin: 0 auto 2rem auto;
+  line-height: 1.6;
+}
+
+p.subtitle {
+  font-size: 0.9rem;
+  margin-bottom: 0;
+  margin-top: 2rem;
+  opacity: 0.6;
+}
+
+button {
+  background: linear-gradient(135deg, #ff0055, #a200ff);
+  color: white;
+  border: none;
+  padding: 1rem 3rem;
+  font-size: 1.2rem;
+  font-weight: 500;
+  font-family: 'Outfit', sans-serif;
+  border-radius: 100px;
+  cursor: pointer;
+  transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+  box-shadow: 0 10px 20px rgba(255, 0, 85, 0.3);
+  position: relative;
+  overflow: hidden;
+}
+
+button::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+  transition: all 0.4s ease;
+}
+
+button:hover {
+  transform: translateY(-3px) scale(1.02);
+  box-shadow: 0 15px 30px rgba(255, 0, 85, 0.5);
+}
+
+button:hover::before {
+  left: 100%;
+}
+
+button:active {
+  transform: translateY(1px);
+}
+
+.hidden {
+  opacity: 0 !important;
+  pointer-events: none !important;
+  transform: scale(0.95);
+  display: none !important;
+}
+
+#loading {
+  font-size: 1.5rem;
+  font-weight: 500;
+  background: linear-gradient(135deg, #00f0ff, #00ffaa);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  animation: pulse 1.5s infinite alternate;
+}
+
+@keyframes pulse {
+  0% { opacity: 0.5; filter: drop-shadow(0 0 5px rgba(0, 240, 255, 0.2)); }
+  100% { opacity: 1; filter: drop-shadow(0 0 15px rgba(0, 240, 255, 0.8)); }
+}
+
+/* Custom Loader from Uiverse.io */
+.spinner-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  margin-bottom: 20px;
+}
+
+.spinner {
+  background-image: linear-gradient(rgb(186, 66, 255) 35%,rgb(0, 225, 255));
+  width: 100px;
+  height: 100px;
+  animation: spinning82341 1.7s linear infinite;
+  text-align: center;
+  border-radius: 50px;
+  filter: blur(1px);
+  box-shadow: 0px -5px 20px 0px rgb(186, 66, 255), 0px 5px 20px 0px rgb(0, 225, 255);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.spinner1 {
+  background-color: rgb(36, 36, 36);
+  width: 100px;
+  height: 100px;
+  border-radius: 50px;
+  filter: blur(10px);
+}
+
+@keyframes spinning82341 {
+  to {
+    transform: rotate(360deg);
+  }
+}

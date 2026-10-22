@@ -1,0 +1,47 @@
+# ==============================================================================
+# NEXGEN AI PRO :: KUBERNETES CONTAINER PROBES MANIFEST
+# ==============================================================================
+# Complete reference specification for Kubernetes Pod Health Probes:
+# 1. startupProbe: Guards initial bootstrapping & slow initialization
+# 2. livenessProbe: Detects deadlocks and memory leaks to trigger pod restart
+# 3. readinessProbe: Controls pod membership in load balancer / service endpoints
+# ==============================================================================
+
+startupProbe:
+  httpGet:
+    path: /api/health/startup
+    port: 5173
+    httpHeaders:
+      - name: X-Kubernetes-Probe
+        value: StartupCheck
+  initialDelaySeconds: 2
+  periodSeconds: 3
+  timeoutSeconds: 2
+  failureThreshold: 20
+  successThreshold: 1
+
+livenessProbe:
+  httpGet:
+    path: /api/health/liveness
+    port: 5173
+    httpHeaders:
+      - name: X-Kubernetes-Probe
+        value: LivenessCheck
+  initialDelaySeconds: 5
+  periodSeconds: 10
+  timeoutSeconds: 3
+  failureThreshold: 3
+  successThreshold: 1
+
+readinessProbe:
+  httpGet:
+    path: /api/health/readiness
+    port: 5173
+    httpHeaders:
+      - name: X-Kubernetes-Probe
+        value: ReadinessCheck
+  initialDelaySeconds: 3
+  periodSeconds: 5
+  timeoutSeconds: 2
+  failureThreshold: 2
+  successThreshold: 1

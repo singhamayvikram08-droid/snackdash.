@@ -1,0 +1,1047 @@
+<!DOCTYPE html>
+<html lang="en" class="dark h-full w-full select-none overflow-hidden">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>NexGen AI PRO — 3D Spatial Computing Cockpit</title>
+  
+  <meta name="description" content="NexGen AI PRO 3D Spatial Computing Cockpit: Real-time WebGL neural matrix visualizer, global edge telemetry HUD, and cybernetic terminal." />
+  <meta name="theme-color" content="#00f3ff" />
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%2300f3ff' stroke-width='2'><circle cx='12' cy='12' r='10'/><polygon points='12 2 12 12 21 12'/></svg>" />
+
+  <!-- Fonts: Space Grotesk, Inter & JetBrains Mono -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700;800&display=swap" rel="stylesheet" />
+
+  <!-- Tailwind CSS v4 CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+
+  <!-- Three.js CDN -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+
+  <style>
+    :root {
+      --cyan: #00f0ff;
+      --emerald: #10b981;
+      --amber: #f59e0b;
+      --rose: #ff0055;
+      --purple: #a200ff;
+      --bg: #030305;
+    }
+
+    body {
+      background-color: var(--bg);
+      color: #f1f5f9;
+      font-family: 'Inter', sans-serif;
+      margin: 0;
+      padding: 0;
+      width: 100vw;
+      height: 100vh;
+      overflow: hidden;
+    }
+
+    .font-space { font-family: 'Space Grotesk', sans-serif; }
+    .font-mono { font-family: 'JetBrains Mono', monospace; }
+
+    /* Scanline effect */
+    .scanlines {
+      background: linear-gradient(
+        rgba(18, 16, 16, 0) 50%,
+        rgba(0, 0, 0, 0.3) 50%
+      ), linear-gradient(
+        90deg,
+        rgba(255, 0, 0, 0.03),
+        rgba(0, 255, 0, 0.01),
+        rgba(0, 0, 255, 0.03)
+      );
+      background-size: 100% 3px, 6px 100%;
+      pointer-events: none;
+    }
+
+    /* Sub-pixel Matrix Grid */
+    .cockpit-grid {
+      background-image: 
+        linear-gradient(rgba(0, 243, 255, 0.03) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(0, 243, 255, 0.03) 1px, transparent 1px);
+      background-size: 40px 40px;
+    }
+
+    /* Glassmorphism Panels */
+    .hud-panel {
+      background: rgba(8, 9, 14, 0.72);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      box-shadow: 0 10px 40px -10px rgba(0, 0, 0, 0.8), inset 0 0 20px rgba(0, 243, 255, 0.02);
+    }
+    .hud-panel-cyan {
+      border: 1px solid rgba(0, 243, 255, 0.25);
+      box-shadow: 0 0 30px rgba(0, 243, 255, 0.08), inset 0 0 20px rgba(0, 243, 255, 0.03);
+    }
+
+    /* Reticle & Targeting Brackets */
+    .bracket-tl {
+      position: absolute; top: 0; left: 0; width: 8px; height: 8px;
+      border-top: 2px solid var(--cyan); border-left: 2px solid var(--cyan);
+    }
+    .bracket-tr {
+      position: absolute; top: 0; right: 0; width: 8px; height: 8px;
+      border-top: 2px solid var(--cyan); border-right: 2px solid var(--cyan);
+    }
+    .bracket-bl {
+      position: absolute; bottom: 0; left: 0; width: 8px; height: 8px;
+      border-bottom: 2px solid var(--cyan); border-left: 2px solid var(--cyan);
+    }
+    .bracket-br {
+      position: absolute; bottom: 0; right: 0; width: 8px; height: 8px;
+      border-bottom: 2px solid var(--cyan); border-right: 2px solid var(--cyan);
+    }
+
+    /* Custom Scrollbar */
+    ::-webkit-scrollbar { width: 4px; height: 4px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: rgba(0, 243, 255, 0.3); border-radius: 2px; }
+    ::-webkit-scrollbar-thumb:hover { background: rgba(0, 243, 255, 0.8); }
+
+    /* Blinking Terminal Cursor */
+    .cursor-blink {
+      display: inline-block;
+      width: 8px;
+      height: 14px;
+      background: var(--cyan);
+      animation: blink 1s step-end infinite;
+      vertical-align: middle;
+    }
+    @keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: 0; } }
+  </style>
+
+  <!-- React 18 & ReactDOM via CDN UMD -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.3.1/umd/react.production.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.3.1/umd/react-dom.production.min.js"></script>
+  <!-- Babel Standalone for in-browser JSX parsing -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.24.4/babel.min.js"></script>
+</head>
+<body class="h-full w-full cockpit-grid text-slate-200">
+  <div id="root" class="h-full w-full"></div>
+
+  <!-- Main Babel Transpiled Application Script -->
+  <script type="text/babel">
+    const { useState, useEffect, useRef, useMemo } = React;
+    const { createRoot } = ReactDOM;
+
+    /* ═════════════════════════════════════════════════════════════
+       WEB AUDIO API SYNTHESIS ENGINE (Synthesized Cybernetic Audio)
+       ═════════════════════════════════════════════════════════════ */
+    class AudioFX {
+      constructor() {
+        this.ctx = null;
+        this.muted = false;
+      }
+      init() {
+        if (!this.ctx && (window.AudioContext || window.webkitAudioContext)) {
+          const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+          this.ctx = new AudioContextClass();
+        }
+        if (this.ctx && this.ctx.state === 'suspended') {
+          this.ctx.resume();
+        }
+      }
+      toggle() {
+        this.muted = !this.muted;
+        return this.muted;
+      }
+      click() {
+        if (this.muted) return;
+        this.init();
+        if (!this.ctx) return;
+        try {
+          const osc = this.ctx.createOscillator();
+          const gain = this.ctx.createGain();
+          osc.type = 'sine';
+          osc.frequency.setValueAtTime(800, this.ctx.currentTime);
+          osc.frequency.exponentialRampToValueAtTime(300, this.ctx.currentTime + 0.03);
+          gain.gain.setValueAtTime(0.04, this.ctx.currentTime);
+          gain.gain.exponentialRampToValueAtTime(0.001, this.ctx.currentTime + 0.03);
+          osc.connect(gain);
+          gain.connect(this.ctx.destination);
+          osc.start();
+          osc.stop(this.ctx.currentTime + 0.03);
+        } catch (e) {}
+      }
+      keypress() {
+        if (this.muted) return;
+        this.init();
+        if (!this.ctx) return;
+        try {
+          const osc = this.ctx.createOscillator();
+          const gain = this.ctx.createGain();
+          osc.type = 'triangle';
+          osc.frequency.setValueAtTime(1200 + Math.random() * 300, this.ctx.currentTime);
+          gain.gain.setValueAtTime(0.02, this.ctx.currentTime);
+          gain.gain.exponentialRampToValueAtTime(0.001, this.ctx.currentTime + 0.02);
+          osc.connect(gain);
+          gain.connect(this.ctx.destination);
+          osc.start();
+          osc.stop(this.ctx.currentTime + 0.02);
+        } catch (e) {}
+      }
+      selectNode() {
+        if (this.muted) return;
+        this.init();
+        if (!this.ctx) return;
+        try {
+          const osc = this.ctx.createOscillator();
+          const gain = this.ctx.createGain();
+          osc.type = 'sine';
+          osc.frequency.setValueAtTime(1046.5, this.ctx.currentTime);
+          osc.frequency.exponentialRampToValueAtTime(1567.98, this.ctx.currentTime + 0.08);
+          gain.gain.setValueAtTime(0.06, this.ctx.currentTime);
+          gain.gain.exponentialRampToValueAtTime(0.001, this.ctx.currentTime + 0.1);
+          osc.connect(gain);
+          gain.connect(this.ctx.destination);
+          osc.start();
+          osc.stop(this.ctx.currentTime + 0.1);
+        } catch (e) {}
+      }
+      success() {
+        if (this.muted) return;
+        this.init();
+        if (!this.ctx) return;
+        try {
+          const now = this.ctx.currentTime;
+          [523.25, 659.25, 783.99, 1046.50].forEach((freq, idx) => {
+            const osc = this.ctx.createOscillator();
+            const gain = this.ctx.createGain();
+            osc.type = 'sine';
+            osc.frequency.setValueAtTime(freq, now + idx * 0.05);
+            gain.gain.setValueAtTime(0.03, now + idx * 0.05);
+            gain.gain.exponentialRampToValueAtTime(0.001, now + idx * 0.05 + 0.1);
+            osc.connect(gain);
+            gain.connect(this.ctx.destination);
+            osc.start(now + idx * 0.05);
+            osc.stop(now + idx * 0.05 + 0.1);
+          });
+        } catch (e) {}
+      }
+      sweep() {
+        if (this.muted) return;
+        this.init();
+        if (!this.ctx) return;
+        try {
+          const osc = this.ctx.createOscillator();
+          const gain = this.ctx.createGain();
+          osc.type = 'sawtooth';
+          osc.frequency.setValueAtTime(180, this.ctx.currentTime);
+          osc.frequency.exponentialRampToValueAtTime(1400, this.ctx.currentTime + 0.35);
+          gain.gain.setValueAtTime(0.04, this.ctx.currentTime);
+          gain.gain.exponentialRampToValueAtTime(0.001, this.ctx.currentTime + 0.35);
+          osc.connect(gain);
+          gain.connect(this.ctx.destination);
+          osc.start();
+          osc.stop(this.ctx.currentTime + 0.35);
+        } catch (e) {}
+      }
+    }
+
+    const sound = new AudioFX();
+
+    /* ═════════════════════════════════════════════════════════════
+       INLINE HUD VECTOR ICONS (Zero Overhead, Pixel-Perfect)
+       ═════════════════════════════════════════════════════════════ */
+    const Icons = {
+      Cpu: (props) => (
+        <svg className={props.className || "w-4 h-4"} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <rect x="4" y="4" width="16" height="16" rx="2" /><rect x="9" y="9" width="6" height="6" />
+          <line x1="9" y1="1" x2="9" y2="4" /><line x1="15" y1="1" x2="15" y2="4" /><line x1="9" y1="20" x2="9" y2="23" /><line x1="15" y1="20" x2="15" y2="23" />
+          <line x1="20" y1="9" x2="23" y2="9" /><line x1="20" y1="14" x2="23" y2="14" /><line x1="1" y1="9" x2="4" y2="9" /><line x1="1" y1="14" x2="4" y2="14" />
+        </svg>
+      ),
+      Globe: (props) => (
+        <svg className={props.className || "w-4 h-4"} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <circle cx="12" cy="12" r="10" /><line x1="2" y1="12" x2="22" y2="12" />
+          <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z" />
+        </svg>
+      ),
+      Terminal: (props) => (
+        <svg className={props.className || "w-4 h-4"} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <polyline points="4 17 10 11 4 5" /><line x1="12" y1="19" x2="20" y2="19" />
+        </svg>
+      ),
+      Shield: (props) => (
+        <svg className={props.className || "w-4 h-4"} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
+        </svg>
+      ),
+      Activity: (props) => (
+        <svg className={props.className || "w-4 h-4"} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <polyline points="22 12 18 12 15 21 9 3 6 12 2 12" />
+        </svg>
+      ),
+      Volume: (props) => (
+        <svg className={props.className || "w-4 h-4"} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5" />
+          <path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07" />
+        </svg>
+      ),
+      VolumeMute: (props) => (
+        <svg className={props.className || "w-4 h-4"} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5" />
+          <line x1="23" y1="9" x2="17" y2="15" /><line x1="17" y1="9" x2="23" y2="15" />
+        </svg>
+      ),
+      Refresh: (props) => (
+        <svg className={props.className || "w-4 h-4"} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <polyline points="23 4 23 10 17 10" /><polyline points="1 20 1 14 7 14" />
+          <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15" />
+        </svg>
+      ),
+      Zap: (props) => (
+        <svg className={props.className || "w-4 h-4"} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" />
+        </svg>
+      ),
+      X: (props) => (
+        <svg className={props.className || "w-4 h-4"} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
+        </svg>
+      ),
+      ChevronDown: (props) => (
+        <svg className={props.className || "w-4 h-4"} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <polyline points="6 9 12 15 18 9" />
+        </svg>
+      ),
+      ChevronUp: (props) => (
+        <svg className={props.className || "w-4 h-4"} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <polyline points="18 15 12 9 6 15" />
+        </svg>
+      ),
+      ArrowLeft: (props) => (
+        <svg className={props.className || "w-4 h-4"} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <line x1="19" y1="12" x2="5" y2="12" /><polyline points="12 19 5 12 12 5" />
+        </svg>
+      )
+    };
+
+    /* ═════════════════════════════════════════════════════════════
+       NEURAL SATELLITE NODES DEFINITION
+       ═════════════════════════════════════════════════════════════ */
+    const SATELLITE_NODES = [
+      { id: 0, name: 'Core Alpha', region: 'US-East', tensor: '[1024, 768]', throughput: '384 GB/s', ping: '0.14ms', status: 'Optimal', load: '64%' },
+      { id: 1, name: 'Transformer β', region: 'US-East', tensor: '[2048, 2048]', throughput: '512 GB/s', ping: '0.22ms', status: 'Optimal', load: '78%' },
+      { id: 2, name: 'Attention γ', region: 'EU-Central', tensor: '[512, 128]', throughput: '192 GB/s', ping: '0.31ms', status: 'Optimal', load: '48%' },
+      { id: 3, name: 'Latent Matrix δ', region: 'EU-Central', tensor: '[4096, 512]', throughput: '420 GB/s', ping: '0.19ms', status: 'Optimal', load: '82%' },
+      { id: 4, name: 'Edge Gateway ε', region: 'APAC-South', tensor: '[128, 64]', throughput: '96 GB/s', ping: '0.09ms', status: 'Standby', load: '21%' },
+      { id: 5, name: 'Kernel Dispatch ζ', region: 'APAC-South', tensor: '[1024, 1024]', throughput: '256 GB/s', ping: '0.28ms', status: 'Optimal', load: '68%' },
+      { id: 6, name: 'Quantum Shuffler η', region: 'AP-Northeast', tensor: '[512, 512]', throughput: '310 GB/s', ping: '0.18ms', status: 'Optimal', load: '72%' },
+      { id: 7, name: 'Synaptic Bridge θ', region: 'AP-Northeast', tensor: '[2048, 1024]', throughput: '480 GB/s', ping: '0.24ms', status: 'Optimal', load: '89%' }
+    ];
+
+    /* ═════════════════════════════════════════════════════════════
+       MAIN 3D COCKPIT COMPONENT
+       ═════════════════════════════════════════════════════════════ */
+    function CockpitApp() {
+      // Cockpit State
+      const [muted, setMuted] = useState(false);
+      const [fps, setFps] = useState(60);
+      const [selectedNode, setSelectedNode] = useState(null);
+      const [hexTelemetry, setHexTelemetry] = useState([]);
+      const [leftOpen, setLeftOpen] = useState(true);
+      const [rightOpen, setRightOpen] = useState(true);
+      const [consoleOpen, setConsoleOpen] = useState(true);
+
+      // Terminal State
+      const [cliHistory, setCliHistory] = useState([
+        { text: 'NexGen Spatial Computing Cockpit initialized.', type: 'sys' },
+        { text: 'Kernel telemetry stream active. Type "help" or click presets.', type: 'sys' }
+      ]);
+      const [cliInput, setCliInput] = useState('');
+      const [cmdIndex, setCmdIndex] = useState(-1);
+      const [pastCmds, setPastCmds] = useState([]);
+      const cliBottomRef = useRef(null);
+
+      // Edge Clusters State
+      const [clusterNodes, setClusterNodes] = useState([
+        { id: 'iad-01', region: 'US-East', city: 'Virginia, US', ping: 12, conns: 18420, status: 'Operational' },
+        { id: 'fra-01', region: 'EU-Central', city: 'Frankfurt, DE', ping: 22, conns: 24150, status: 'Operational' },
+        { id: 'sin-01', region: 'APAC-South', city: 'Singapore, SG', ping: 26, conns: 22100, status: 'Operational' },
+        { id: 'hnd-01', region: 'AP-Northeast', city: 'Tokyo, JP', ping: 15, conns: 26800, status: 'Operational' }
+      ]);
+      const [rebalancing, setRebalancing] = useState(false);
+
+      const canvasContainerRef = useRef(null);
+
+      // Rolling Hex Data Stream
+      useEffect(() => {
+        const interval = setInterval(() => {
+          const codes = Array.from({ length: 6 }, () => 
+            '0x' + Math.floor(Math.random() * 0xFFFFFF).toString(16).toUpperCase().padStart(6, '0')
+          );
+          setHexTelemetry(codes);
+        }, 150);
+        return () => clearInterval(interval);
+      }, []);
+
+      // Auto-scroll Terminal
+      useEffect(() => {
+        cliBottomRef.current?.scrollIntoView({ behavior: 'smooth' });
+      }, [cliHistory]);
+
+      // Sound Toggle
+      const handleToggleSound = () => {
+        const isMuted = sound.toggle();
+        setMuted(isMuted);
+        if (!isMuted) sound.success();
+      };
+
+      // Three.js Full-Viewport Engine Mount
+      useEffect(() => {
+        const container = canvasContainerRef.current;
+        if (!container || !window.THREE) return;
+
+        const width = container.clientWidth;
+        const height = container.clientHeight;
+
+        const scene = new THREE.Scene();
+        scene.fog = new THREE.FogExp2(0x030307, 0.03);
+
+        const camera = new THREE.PerspectiveCamera(55, width / height, 0.1, 1000);
+        camera.position.set(0, 1.5, 11);
+
+        let renderer = null;
+        try {
+          const testC = document.createElement('canvas');
+          if (testC.getContext('webgl2') || testC.getContext('webgl')) {
+            renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+            renderer.setSize(width, height);
+            renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+            container.appendChild(renderer.domElement);
+          }
+        } catch (_) {
+          renderer = null;
+        }
+
+        if (!renderer) {
+          const fbCanvas = document.createElement('canvas');
+          fbCanvas.width = width;
+          fbCanvas.height = height;
+          fbCanvas.className = 'w-full h-full block';
+          container.appendChild(fbCanvas);
+          const ctx = fbCanvas.getContext('2d');
+          let t = 0;
+          let anim2D;
+          const render2D = () => {
+            anim2D = requestAnimationFrame(render2D);
+            if (!ctx) return;
+            t += 0.02;
+            ctx.clearRect(0, 0, width, height);
+            const cx = width / 2;
+            const cy = height / 2;
+            const radius = Math.min(width, height) * 0.3;
+            ctx.strokeStyle = '#00f0ff';
+            ctx.lineWidth = 1.5;
+            ctx.beginPath();
+            ctx.arc(cx, cy, radius * 0.6, 0, Math.PI * 2);
+            ctx.stroke();
+            SATELLITE_NODES.forEach((n, i) => {
+              const a = t * 0.4 + (i / SATELLITE_NODES.length) * Math.PI * 2;
+              const sx = cx + Math.cos(a) * radius;
+              const sy = cy + Math.sin(a) * (radius * 0.5);
+              ctx.fillStyle = i === 4 ? '#00f0ff' : '#10b981';
+              ctx.beginPath();
+              ctx.arc(sx, sy, 5, 0, Math.PI * 2);
+              ctx.fill();
+            });
+          };
+          render2D();
+          return () => {
+            cancelAnimationFrame(anim2D);
+            if (fbCanvas.parentNode) fbCanvas.parentNode.removeChild(fbCanvas);
+          };
+        }
+
+        // Core Quantum Matrix Group
+        const matrixGroup = new THREE.Group();
+        scene.add(matrixGroup);
+
+        // Central Icosahedron Wireframe Core
+        const icoGeo = new THREE.IcosahedronGeometry(2.0, 1);
+        const icoMat = new THREE.MeshBasicMaterial({ color: 0x00f3ff, wireframe: true, transparent: true, opacity: 0.65 });
+        const icoCore = new THREE.Mesh(icoGeo, icoMat);
+        matrixGroup.add(icoCore);
+
+        // Outer Dodecahedron Hull
+        const dodecaGeo = new THREE.DodecahedronGeometry(2.8, 0);
+        const dodecaMat = new THREE.MeshBasicMaterial({ color: 0xa855f7, wireframe: true, transparent: true, opacity: 0.25 });
+        const dodecaHull = new THREE.Mesh(dodecaGeo, dodecaMat);
+        matrixGroup.add(dodecaHull);
+
+        // Glowing Core Light
+        const coreLight = new THREE.PointLight(0x00f3ff, 2.5, 30);
+        matrixGroup.add(coreLight);
+
+        // Satellite Neural Nodes & Animated Conduits
+        const satelliteMeshList = [];
+        const conduitLines = [];
+        const nodeRadius = 5.2;
+
+        SATELLITE_NODES.forEach((node, idx) => {
+          const angle = (idx / SATELLITE_NODES.length) * Math.PI * 2;
+          const sphereGeo = new THREE.SphereGeometry(0.28, 16, 16);
+          const sphereMat = new THREE.MeshBasicMaterial({ color: idx === 4 ? 0x00f3ff : 0x10b981 });
+          const sphere = new THREE.Mesh(sphereGeo, sphereMat);
+          
+          sphere.position.set(
+            Math.cos(angle) * nodeRadius,
+            Math.sin(idx * 1.8) * 1.4,
+            Math.sin(angle) * nodeRadius
+          );
+          sphere.userData = node;
+          matrixGroup.add(sphere);
+          satelliteMeshList.push(sphere);
+
+          // Fixed Conduit Geometry
+          const lineGeo = new THREE.BufferGeometry().setFromPoints([
+            new THREE.Vector3(0, 0, 0),
+            sphere.position
+          ]);
+          const lineMat = new THREE.LineBasicMaterial({ color: 0x00f3ff, transparent: true, opacity: 0.25 });
+          const line = new THREE.Line(lineGeo, lineMat);
+          matrixGroup.add(line);
+          conduitLines.push({ line, target: sphere.position });
+        });
+
+        // Flowing Data Particles along conduits
+        const streamParticleCount = 64;
+        const streamGeo = new THREE.BufferGeometry();
+        const streamPositions = new Float32Array(streamParticleCount * 3);
+        const streamProgress = new Float32Array(streamParticleCount);
+        const streamTargets = new Int32Array(streamParticleCount);
+
+        for (let i = 0; i < streamParticleCount; i++) {
+          streamTargets[i] = i % SATELLITE_NODES.length;
+          streamProgress[i] = Math.random();
+        }
+
+        streamGeo.setAttribute('position', new THREE.BufferAttribute(streamPositions, 3));
+        const streamMat = new THREE.PointsMaterial({
+          color: 0x00f3ff,
+          size: 0.12,
+          transparent: true,
+          opacity: 0.9,
+          blending: THREE.AdditiveBlending
+        });
+        const streamParticles = new THREE.Points(streamGeo, streamMat);
+        matrixGroup.add(streamParticles);
+
+        // Ambient Volumetric Data Dust
+        const dustCount = 1000;
+        const dustGeo = new THREE.BufferGeometry();
+        const dustPositions = new Float32Array(dustCount * 3);
+        for (let i = 0; i < dustCount * 3; i += 3) {
+          dustPositions[i] = (Math.random() - 0.5) * 35;
+          dustPositions[i + 1] = (Math.random() - 0.5) * 25;
+          dustPositions[i + 2] = (Math.random() - 0.5) * 35;
+        }
+        dustGeo.setAttribute('position', new THREE.BufferAttribute(dustPositions, 3));
+        const dustMat = new THREE.PointsMaterial({ color: 0x00f3ff, size: 0.04, transparent: true, opacity: 0.3 });
+        const dust = new THREE.Points(dustGeo, dustMat);
+        scene.add(dust);
+
+        // Interactive Mouse Orbit & Tilting
+        let isDragging = false;
+        let prevX = 0, prevY = 0;
+        let targetRotX = 0, targetRotY = 0;
+
+        const onMouseDown = (e) => {
+          if (e.target.tagName !== 'CANVAS') return;
+          isDragging = true;
+          prevX = e.clientX;
+          prevY = e.clientY;
+        };
+
+        const onMouseMove = (e) => {
+          if (isDragging) {
+            const dx = e.clientX - prevX;
+            const dy = e.clientY - prevY;
+            targetRotY += dx * 0.005;
+            targetRotX += dy * 0.005;
+            prevX = e.clientX;
+            prevY = e.clientY;
+          }
+        };
+
+        const onMouseUp = () => { isDragging = false; };
+
+        // Raycasting for Node Clicks
+        const raycaster = new THREE.Raycaster();
+        const mouse = new THREE.Vector2();
+
+        const onClick = (e) => {
+          if (e.target.tagName !== 'CANVAS') return;
+          const rect = renderer.domElement.getBoundingClientRect();
+          mouse.x = ((e.clientX - rect.left) / rect.width) * 2 - 1;
+          mouse.y = -((e.clientY - rect.top) / rect.height) * 2 + 1;
+
+          raycaster.setFromCamera(mouse, camera);
+          const intersects = raycaster.intersectObjects(satelliteMeshList);
+
+          if (intersects.length > 0) {
+            const clickedNode = intersects[0].object.userData;
+            sound.selectNode();
+            setSelectedNode(clickedNode);
+          }
+        };
+
+        window.addEventListener('mousedown', onMouseDown);
+        window.addEventListener('mousemove', onMouseMove);
+        window.addEventListener('mouseup', onMouseUp);
+        container.addEventListener('click', onClick);
+
+        // Render & Animation Loop
+        let frameId;
+        let lastTime = performance.now();
+        let frames = 0;
+
+        const animate = () => {
+          frameId = requestAnimationFrame(animate);
+
+          // Rotate inner cores
+          icoCore.rotation.x += 0.006;
+          icoCore.rotation.y += 0.009;
+          dodecaHull.rotation.x -= 0.004;
+          dodecaHull.rotation.y -= 0.006;
+
+          // Smooth drag orbit damping
+          matrixGroup.rotation.y += (targetRotY - matrixGroup.rotation.y) * 0.06;
+          matrixGroup.rotation.x += (targetRotX - matrixGroup.rotation.x) * 0.06;
+
+          // Pulse Satellites
+          const time = Date.now() * 0.002;
+          satelliteMeshList.forEach((mesh, idx) => {
+            mesh.position.y += Math.sin(time + idx) * 0.003;
+          });
+
+          // Animate particle streams along conduits
+          const posArray = streamGeo.attributes.position.array;
+          for (let i = 0; i < streamParticleCount; i++) {
+            streamProgress[i] += 0.012;
+            if (streamProgress[i] > 1.0) streamProgress[i] = 0;
+
+            const targetPos = satelliteMeshList[streamTargets[i]].position;
+            const p = streamProgress[i];
+            
+            // Linear interpolation from core to target node
+            posArray[i * 3] = targetPos.x * p;
+            posArray[i * 3 + 1] = targetPos.y * p;
+            posArray[i * 3 + 2] = targetPos.z * p;
+          }
+          streamGeo.attributes.position.needsUpdate = true;
+
+          // FPS calculation
+          frames++;
+          const curTime = performance.now();
+          if (curTime - lastTime >= 1000) {
+            setFps(Math.round((frames * 1000) / (curTime - lastTime)));
+            frames = 0;
+            lastTime = curTime;
+          }
+
+          renderer.render(scene, camera);
+        };
+
+        animate();
+
+        // Responsive Resize
+        const onResize = () => {
+          if (!container) return;
+          const w = container.clientWidth;
+          const h = container.clientHeight;
+          camera.aspect = w / h;
+          camera.updateProjectionMatrix();
+          renderer.setSize(w, h);
+        };
+        window.addEventListener('resize', onResize);
+
+        return () => {
+          cancelAnimationFrame(frameId);
+          window.removeEventListener('resize', onResize);
+          window.removeEventListener('mousedown', onMouseDown);
+          window.removeEventListener('mousemove', onMouseMove);
+          window.removeEventListener('mouseup', onMouseUp);
+          container.removeEventListener('click', onClick);
+          if (container.contains(renderer.domElement)) {
+            container.removeChild(renderer.domElement);
+          }
+        };
+      }, []);
+
+      // Rebalancing Simulation
+      const triggerClusterRebalance = () => {
+        sound.sweep();
+        setRebalancing(true);
+
+        setTimeout(() => {
+          sound.success();
+          setClusterNodes(prev => prev.map(n => ({
+            ...n,
+            ping: Math.max(9, Math.round(n.ping * 0.85)),
+            status: 'Operational'
+          })));
+          setRebalancing(false);
+          setCliHistory(prev => [
+            ...prev,
+            { text: '[REBALANCE COMPLETE] Global latency vectors unified at 99.99% throughput.', type: 'ok' }
+          ]);
+        }, 1800);
+      };
+
+      // CLI Execution
+      const handleRunCommand = (e) => {
+        e.preventDefault();
+        const cmd = cliInput.trim();
+        if (!cmd) return;
+
+        sound.click();
+        setPastCmds(prev => [cmd, ...prev]);
+        setCmdIndex(-1);
+
+        const newLog = [...cliHistory, { text: `> ${cmd}`, type: 'in' }];
+        const lower = cmd.toLowerCase();
+
+        if (lower === 'clear') {
+          sound.click();
+          setCliHistory([]);
+          setCliInput('');
+          return;
+        } else if (lower === 'status') {
+          sound.success();
+          newLog.push({ text: 'CLUSTER STATUS: OPTIMAL (312/312 Nodes Online)', type: 'ok' });
+          newLog.push({ text: 'LATENCY BUS: 0.28ms | EGRESS: 1.24 TB/s | WEBGPU: ACTIVE', type: 'out' });
+        } else if (lower === 'nodes') {
+          sound.success();
+          newLog.push({ text: 'ID       REGION       LATENCY   CONNS    HEALTH', type: 'out' });
+          clusterNodes.forEach(n => {
+            newLog.push({ text: `${n.id.padEnd(8)} ${n.region.padEnd(12)} ${String(n.ping + 'ms').padEnd(9)} ${String(n.conns).padEnd(8)} ${n.status}`, type: 'out' });
+          });
+        } else if (lower.startsWith('ping')) {
+          sound.click();
+          const target = cmd.split(' ')[1] || 'iad-01';
+          newLog.push({ text: `PING ${target}: 64 bytes | time=11.8ms | ttl=58 | 0% packet loss`, type: 'ok' });
+        } else if (lower === 'deploy') {
+          sound.sweep();
+          newLog.push({ text: 'DEPLOYING KINETIC SHADERS TO GLOBAL MESH...', type: 'sys' });
+          newLog.push({ text: '[████████████████████] 100% Shard consensus confirmed.', type: 'ok' });
+        } else if (lower === 'help') {
+          newLog.push({ text: 'COMMANDS: status | nodes | ping <target> | deploy | clear', type: 'out' });
+        } else {
+          newLog.push({ text: `Unknown command: "${cmd}". Type "help" for syntax.`, type: 'err' });
+        }
+
+        setCliHistory(newLog);
+        setCliInput('');
+      };
+
+      return (
+        <div className="relative w-full h-full overflow-hidden">
+          {/* Full-Screen 3D WebGL Canvas */}
+          <div ref={canvasContainerRef} className="absolute inset-0 z-0 cursor-grab active:cursor-grabbing" />
+
+          {/* Scanlines & Vignette Layer */}
+          <div className="absolute inset-0 scanlines z-10 pointer-events-none" />
+
+          {/* Top Spatial Cockpit Header */}
+          <header className="absolute top-4 left-4 right-4 z-20 flex items-center justify-between gap-4 pointer-events-none">
+            {/* Logo, Status & Back to Main Site Button */}
+            <div className="flex items-center gap-2.5 pointer-events-auto">
+              <a
+                href="/"
+                className="flex items-center gap-2 px-3.5 py-2.5 rounded-2xl bg-[#08090e]/90 hover:bg-[#00f0ff]/15 border border-white/15 hover:border-[#00f0ff]/50 text-gray-200 hover:text-[#00f0ff] font-mono text-xs font-semibold backdrop-blur-xl transition-all shadow-lg group cursor-pointer"
+              >
+                <Icons.ArrowLeft className="w-3.5 h-3.5 text-[#00f0ff] group-hover:-translate-x-0.5 transition-transform" />
+                <span>Back to Main Site</span>
+              </a>
+
+              <div className="flex items-center gap-3 bg-[#08090e]/80 backdrop-blur-xl px-4 py-2.5 rounded-2xl border border-[#00f0ff]/30">
+                <div className="w-8 h-8 rounded-xl bg-[#00f0ff]/15 border border-[#00f0ff]/40 flex items-center justify-center text-[#00f0ff]">
+                  <Icons.Zap className="w-4 h-4" />
+                </div>
+                <div>
+                  <div className="flex items-center gap-2">
+                    <span className="font-space font-extrabold text-base tracking-wide text-white">NEXGEN AI</span>
+                    <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-gradient-to-r from-[#00f0ff]/20 to-[#a200ff]/20 border border-[#00f0ff]/40 text-[#00f0ff] font-bold">
+                      PRO
+                    </span>
+                    <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-[#00f0ff]/20 text-[#00f0ff] font-bold">
+                      SPATIAL COCKPIT
+                    </span>
+                  </div>
+                  <div className="text-[10px] font-mono text-emerald-400 flex items-center gap-1.5">
+                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                    SYS::CORE::SYNCHRONIZED
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Quick Cockpit Stats & Mute Toggle */}
+            <div className="flex items-center gap-2.5 pointer-events-auto">
+              <div className="hidden sm:flex items-center gap-4 bg-[#08090e]/80 backdrop-blur-xl px-4 py-2 rounded-2xl border border-white/10 text-xs font-mono">
+                <div><span className="text-gray-400">FPS:</span> <span className="text-emerald-400 font-bold">{fps}</span></div>
+                <div><span className="text-gray-400">BUS:</span> <span className="text-[#00f3ff] font-bold">&lt;0.3ms</span></div>
+                <div><span className="text-gray-400">THROUGHPUT:</span> <span className="text-purple-400 font-bold">1.2 TB/s</span></div>
+              </div>
+
+              <button
+                onClick={handleToggleSound}
+                aria-label="Toggle Sound"
+                className="p-2.5 rounded-2xl bg-[#08090e]/80 backdrop-blur-xl border border-white/10 text-gray-300 hover:text-[#00f3ff] transition-colors"
+              >
+                {muted ? <Icons.VolumeMute className="w-4 h-4 text-rose-400" /> : <Icons.Volume className="w-4 h-4 text-emerald-400" />}
+              </button>
+            </div>
+          </header>
+
+          {/* Left HUD Panel: Live Telemetry */}
+          <div className={`absolute top-20 left-4 z-20 w-72 transition-all duration-300 ${leftOpen ? 'translate-x-0' : '-translate-x-[calc(100%+1rem)]'}`}>
+            <div className="relative hud-panel rounded-3xl p-5 space-y-4">
+              <div className="bracket-tl" /><div className="bracket-tr" /><div className="bracket-bl" /><div className="bracket-br" />
+
+              <div className="flex items-center justify-between pb-2 border-b border-white/10">
+                <div className="flex items-center gap-2 text-xs font-mono font-bold text-[#00f3ff] uppercase tracking-wider">
+                  <Icons.Activity className="w-4 h-4" /> Live Telemetry
+                </div>
+                <span className="text-[10px] font-mono text-emerald-400">STREAMING</span>
+              </div>
+
+              {/* Telemetry Gauge Cards */}
+              <div className="space-y-2.5 font-mono text-xs">
+                <div className="p-3 rounded-2xl bg-white/5 border border-white/5">
+                  <div className="text-gray-400 text-[10px] uppercase">Bus Latency</div>
+                  <div className="text-xl font-bold text-[#00f3ff] font-space">&lt;0.28 ms</div>
+                  <div className="w-full bg-white/10 h-1 rounded-full mt-2 overflow-hidden">
+                    <div className="bg-[#00f3ff] h-full w-[94%]" />
+                  </div>
+                </div>
+
+                <div className="p-3 rounded-2xl bg-white/5 border border-white/5">
+                  <div className="text-gray-400 text-[10px] uppercase">Matrix Egress</div>
+                  <div className="text-xl font-bold text-emerald-400 font-space">1.24 TB/s</div>
+                  <div className="w-full bg-white/10 h-1 rounded-full mt-2 overflow-hidden">
+                    <div className="bg-emerald-400 h-full w-[88%]" />
+                  </div>
+                </div>
+
+                <div className="p-3 rounded-2xl bg-white/5 border border-white/5">
+                  <div className="text-gray-400 text-[10px] uppercase">Quantum Cipher Shield</div>
+                  <div className="text-xs font-bold text-purple-400 mt-1">AES-GCM-256 + KYBER</div>
+                  <div className="text-[10px] text-gray-500 mt-0.5">Post-Quantum Cryptography Active</div>
+                </div>
+              </div>
+
+              {/* Live Rolling Hex Stream */}
+              <div className="p-3 rounded-2xl bg-black/60 border border-white/5">
+                <div className="text-[10px] font-mono text-gray-400 uppercase mb-1.5 flex justify-between">
+                  <span>HEX STREAM</span>
+                  <span className="text-[#00f3ff]">0x9F2A</span>
+                </div>
+                <div className="grid grid-cols-3 gap-1 font-mono text-[9px] text-[#00f3ff]/70">
+                  {hexTelemetry.map((h, i) => (
+                    <span key={i}>{h}</span>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Left Panel Toggle Tab */}
+          <button
+            onClick={() => setLeftOpen(!leftOpen)}
+            className="absolute top-20 left-0 z-30 px-1 py-3 rounded-r-xl bg-[#08090e]/90 border-y border-r border-[#00f3ff]/40 text-[#00f3ff] text-xs font-mono"
+            style={{ left: leftOpen ? '18.5rem' : '0' }}
+          >
+            {leftOpen ? '◀' : '▶'}
+          </button>
+
+          {/* Right HUD Panel: Global Node Cluster Inspector */}
+          <div className={`absolute top-20 right-4 z-20 w-80 transition-all duration-300 ${rightOpen ? 'translate-x-0' : 'translate-x-[calc(100%+1rem)]'}`}>
+            <div className="relative hud-panel rounded-3xl p-5 space-y-4">
+              <div className="bracket-tl" /><div className="bracket-tr" /><div className="bracket-bl" /><div className="bracket-br" />
+
+              <div className="flex items-center justify-between pb-2 border-b border-white/10">
+                <div className="flex items-center gap-2 text-xs font-mono font-bold text-[#00f3ff] uppercase tracking-wider">
+                  <Icons.Globe className="w-4 h-4" /> Global Cluster Fleet
+                </div>
+                <span className="text-[10px] font-mono text-gray-400">312 NODES</span>
+              </div>
+
+              {/* Cluster Nodes List */}
+              <div className="space-y-2">
+                {clusterNodes.map(node => (
+                  <div key={node.id} className="p-3 rounded-2xl bg-white/5 border border-white/5 flex items-center justify-between text-xs font-mono">
+                    <div>
+                      <div className="font-bold text-white flex items-center gap-2">
+                        <span>{node.city}</span>
+                        <span className="text-[9px] px-1.5 py-0.2 rounded bg-white/10 text-gray-300">{node.region}</span>
+                      </div>
+                      <div className="text-[10px] text-gray-400 mt-0.5">{node.conns.toLocaleString()} active sockets</div>
+                    </div>
+                    <div className="text-right">
+                      <div className={`font-bold ${node.ping < 20 ? 'text-emerald-400' : 'text-amber-400'}`}>
+                        {node.ping}ms
+                      </div>
+                      <span className="text-[9px] text-emerald-400 font-bold uppercase">{node.status}</span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              {/* Load Rebalance Action */}
+              <button
+                onClick={triggerClusterRebalance}
+                disabled={rebalancing}
+                className="w-full py-2.5 rounded-xl bg-gradient-to-r from-[#00f3ff] to-[#8b5cf6] text-black font-space font-bold text-xs uppercase tracking-wider hover:opacity-90 active:scale-95 transition-all flex items-center justify-center gap-2"
+              >
+                <Icons.Refresh className={`w-3.5 h-3.5 ${rebalancing ? 'animate-spin' : ''}`} />
+                {rebalancing ? 'Synchronizing Nodes...' : 'Optimize Global Routing'}
+              </button>
+            </div>
+          </div>
+
+          {/* Right Panel Toggle Tab */}
+          <button
+            onClick={() => setRightOpen(!rightOpen)}
+            className="absolute top-20 right-0 z-30 px-1 py-3 rounded-l-xl bg-[#08090e]/90 border-y border-l border-[#00f3ff]/40 text-[#00f3ff] text-xs font-mono"
+            style={{ right: rightOpen ? '20.5rem' : '0' }}
+          >
+            {rightOpen ? '▶' : '◀'}
+          </button>
+
+          {/* Augmented Reality Node Inspector Card (Triggered by 3D Click) */}
+          {selectedNode && (
+            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-30 w-88 max-w-[calc(100vw-2rem)] hud-panel hud-panel-cyan rounded-3xl p-6 shadow-2xl animate-in zoom-in-95 duration-200">
+              <div className="bracket-tl" /><div className="bracket-tr" /><div className="bracket-bl" /><div className="bracket-br" />
+
+              <div className="flex items-center justify-between pb-3 border-b border-white/10 mb-4">
+                <div className="flex items-center gap-2.5">
+                  <div className="w-3 h-3 rounded-full bg-[#00f3ff] animate-ping" />
+                  <h3 className="font-space font-bold text-white text-base">{selectedNode.name}</h3>
+                </div>
+                <button
+                  onClick={() => setSelectedNode(null)}
+                  className="p-1 rounded-lg hover:bg-white/10 text-gray-400 hover:text-white transition-colors"
+                >
+                  <Icons.X className="w-4 h-4" />
+                </button>
+              </div>
+
+              <div className="space-y-2.5 font-mono text-xs">
+                <div className="flex justify-between py-1 border-b border-white/5">
+                  <span className="text-gray-400">Cluster Region</span>
+                  <span className="text-white font-bold">{selectedNode.region}</span>
+                </div>
+                <div className="flex justify-between py-1 border-b border-white/5">
+                  <span className="text-gray-400">Tensor Dimensions</span>
+                  <span className="text-[#00f3ff] font-bold">{selectedNode.tensor}</span>
+                </div>
+                <div className="flex justify-between py-1 border-b border-white/5">
+                  <span className="text-gray-400">Throughput Velocity</span>
+                  <span className="text-emerald-400 font-bold">{selectedNode.throughput}</span>
+                </div>
+                <div className="flex justify-between py-1 border-b border-white/5">
+                  <span className="text-gray-400">Bus Response</span>
+                  <span className="text-purple-400 font-bold">{selectedNode.ping}</span>
+                </div>
+                <div className="flex justify-between py-1 border-b border-white/5">
+                  <span className="text-gray-400">Shard Allocation</span>
+                  <span className="text-white font-bold">{selectedNode.load}</span>
+                </div>
+              </div>
+
+              <button
+                onClick={() => {
+                  sound.success();
+                  alert(`Direct probe dispatched to ${selectedNode.name}. Neural weights recalibrated.`);
+                  setSelectedNode(null);
+                }}
+                className="mt-5 w-full py-2.5 rounded-xl bg-gradient-to-r from-[#00f3ff] to-[#10b981] text-black font-space font-bold text-xs uppercase tracking-wider hover:opacity-90 active:scale-95 transition-all"
+              >
+                Recalibrate Shard
+              </button>
+            </div>
+          )}
+
+          {/* Bottom Panel: Floating Cybernetic Terminal CLI */}
+          <div className={`absolute bottom-4 left-4 right-4 z-20 max-w-4xl mx-auto transition-all duration-300 ${consoleOpen ? 'translate-y-0' : 'translate-y-[calc(100%-2.5rem)]'}`}>
+            <div className="relative hud-panel rounded-3xl p-4 flex flex-col h-56">
+              <div className="bracket-tl" /><div className="bracket-tr" /><div className="bracket-bl" /><div className="bracket-br" />
+
+              {/* Terminal Header Bar */}
+              <div className="flex items-center justify-between pb-2 mb-2 border-b border-white/10 font-mono text-xs">
+                <div className="flex items-center gap-2 text-[#00f3ff]">
+                  <Icons.Terminal className="w-3.5 h-3.5" />
+                  <span className="font-bold">CYBERNETIC TERMINAL</span>
+                </div>
+
+                <div className="flex items-center gap-2">
+                  <div className="hidden sm:flex items-center gap-1.5 text-[10px]">
+                    {['status', 'nodes', 'ping iad-01', 'deploy', 'clear'].map(c => (
+                      <button
+                        key={c}
+                        onClick={() => {
+                          setCliInput(c);
+                        }}
+                        className="px-2 py-0.5 rounded bg-white/5 hover:bg-[#00f3ff]/20 text-gray-300 hover:text-[#00f3ff] border border-white/10 transition-colors"
+                      >
+                        {c}
+                      </button>
+                    ))}
+                  </div>
+
+                  <button
+                    onClick={() => setConsoleOpen(!consoleOpen)}
+                    className="p-1 rounded hover:bg-white/10 text-gray-400 hover:text-white transition-colors"
+                  >
+                    {consoleOpen ? <Icons.ChevronDown className="w-4 h-4" /> : <Icons.ChevronUp className="w-4 h-4" />}
+                  </button>
+                </div>
+              </div>
+
+              {/* Terminal History */}
+              <div className="flex-1 overflow-y-auto space-y-1.5 font-mono text-[11px] text-slate-300 pr-2">
+                {cliHistory.map((item, i) => (
+                  <div key={i} className={`leading-relaxed ${
+                    item.type === 'in' ? 'text-white font-bold' :
+                    item.type === 'ok' ? 'text-emerald-400' :
+                    item.type === 'sys' ? 'text-[#00f3ff]' :
+                    item.type === 'err' ? 'text-rose-400' : 'text-slate-300'
+                  }`}>
+                    {item.text}
+                  </div>
+                ))}
+                <div ref={cliBottomRef} />
+              </div>
+
+              {/* Terminal Input */}
+              <form onSubmit={handleRunCommand} className="mt-2 pt-2 border-t border-white/10 flex items-center gap-2 font-mono text-xs">
+                <span className="text-[#00f3ff] font-bold">nexgen@cockpit:~#</span>
+                <input
+                  type="text"
+                  value={cliInput}
+                  onChange={(e) => { sound.keypress(); setCliInput(e.target.value); }}
+                  placeholder="Enter command ('help', 'nodes', 'status', 'deploy')..."
+                  className="flex-1 bg-transparent text-white outline-none placeholder-gray-600 font-mono"
+                />
+                <span className="cursor-blink" />
+              </form>
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    const root = createRoot(document.getElementById('root'));
+    root.render(<CockpitApp />);
+  </script>
+</body>
+</html>

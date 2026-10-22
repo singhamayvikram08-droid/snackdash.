@@ -1,0 +1,8 @@
+User-agent: *
+Allow: /
+Disallow: /dashboard
+Disallow: /next-gen-ai
+Disallow: /admin
+Disallow: /api/
+
+Sitemap: https://nexgen.io/sitemap.xml

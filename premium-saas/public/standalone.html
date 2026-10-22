@@ -1,0 +1,1682 @@
+<!DOCTYPE html>
+<html lang="en" class="dark scroll-smooth">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>NexGen — 3D Autonomous Cloud &amp; Spatial Neural Engine</title>
+  
+  <!-- Primary SEO & Open Graph Meta Tags -->
+  <meta name="description" content="NexGen is a cloud-native 3D autonomous development and spatial computing engine bridging WebGL/WebGPU browser rendering with distributed neural infrastructure." />
+  <meta name="theme-color" content="#00f3ff" />
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%2300f3ff' stroke-width='2'><polygon points='12 2 2 7 12 12 22 7 12 2'/><polyline points='2 17 12 22 22 17'/><polyline points='2 12 12 17 22 12'/></svg>" />
+
+  <!-- Fonts: Space Grotesk, Inter & JetBrains Mono -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet" />
+
+  <!-- Tailwind CSS v4 CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+
+  <!-- Three.js CDN -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+
+  <!-- Custom Cyberpunk & Telemetry Styles -->
+  <style>
+    :root {
+      --color-cyan: #00f3ff;
+      --color-emerald: #10b981;
+      --color-amber: #f59e0b;
+      --color-rose: #ff0055;
+      --color-violet: #8b5cf6;
+      --bg-dark: #030307;
+    }
+
+    body {
+      background-color: var(--bg-dark);
+      color: #e2e8f0;
+      font-family: 'Inter', sans-serif;
+      overflow-x: hidden;
+      margin: 0;
+      padding: 0;
+    }
+
+    .font-space { font-family: 'Space Grotesk', sans-serif; }
+    .font-mono { font-family: 'JetBrains Mono', monospace; }
+
+    /* Scanlines Overlay */
+    .scanlines {
+      background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%), linear-gradient(90deg, rgba(255, 0, 0, 0.03), rgba(0, 255, 0, 0.01), rgba(0, 0, 255, 0.03));
+      background-size: 100% 3px, 6px 100%;
+      pointer-events: none;
+    }
+
+    /* Sub-pixel Matrix Grid */
+    .telemetry-grid {
+      background-image: 
+        linear-gradient(rgba(0, 243, 255, 0.04) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(0, 243, 255, 0.04) 1px, transparent 1px);
+      background-size: 40px 40px;
+    }
+
+    /* Glassmorphism Cyberpunk Cards */
+    .glass-card {
+      background: rgba(10, 11, 18, 0.75);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.57);
+    }
+    .glass-card-cyan {
+      border: 1px solid rgba(0, 243, 255, 0.2);
+      box-shadow: 0 0 25px rgba(0, 243, 255, 0.08), inset 0 0 15px rgba(0, 243, 255, 0.03);
+    }
+
+    /* Custom Cyberpunk Scrollbar */
+    ::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    ::-webkit-scrollbar-track {
+      background: #030307;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: rgba(0, 243, 255, 0.3);
+      border-radius: 3px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: rgba(0, 243, 255, 0.7);
+    }
+
+    /* Glowing Pulses */
+    @keyframes pulse-cyan {
+      0%, 100% { box-shadow: 0 0 15px rgba(0, 243, 255, 0.3); }
+      50% { box-shadow: 0 0 30px rgba(0, 243, 255, 0.7); }
+    }
+    .glow-cyan { animation: pulse-cyan 3s infinite; }
+
+    /* Monospace Terminal Cursor */
+    .terminal-cursor {
+      display: inline-block;
+      width: 8px;
+      height: 15px;
+      background-color: var(--color-cyan);
+      animation: blink 1s step-end infinite;
+      vertical-align: middle;
+    }
+    @keyframes blink {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0; }
+    }
+  </style>
+
+  <!-- React 18 & ReactDOM via CDN UMD -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.3.1/umd/react.production.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.3.1/umd/react-dom.production.min.js"></script>
+  <!-- Babel Standalone for in-browser JSX parsing -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.24.4/babel.min.js"></script>
+</head>
+<body class="bg-[#030307] text-slate-100 min-h-screen relative selection:bg-[#00f3ff] selection:text-black">
+  <div id="root"></div>
+
+  <!-- Main Babel Transpiled Application Script -->
+  <script type="text/babel">
+    const { useState, useEffect, useRef, useMemo } = React;
+    const { createRoot } = ReactDOM;
+
+    /* ═════════════════════════════════════════════════════════════
+       WEB AUDIO SYNTHESIS SFX ENGINE (Zero External Dependencies)
+       ═════════════════════════════════════════════════════════════ */
+    class SoundEngine {
+      constructor() {
+        this.ctx = null;
+        this.muted = false;
+      }
+
+      init() {
+        if (!this.ctx && (window.AudioContext || window.webkitAudioContext)) {
+          const AudioCtx = window.AudioContext || window.webkitAudioContext;
+          this.ctx = new AudioCtx();
+        }
+        if (this.ctx && this.ctx.state === 'suspended') {
+          this.ctx.resume();
+        }
+      }
+
+      toggleMute() {
+        this.muted = !this.muted;
+        return this.muted;
+      }
+
+      playClick() {
+        if (this.muted) return;
+        this.init();
+        if (!this.ctx) return;
+        try {
+          const osc = this.ctx.createOscillator();
+          const gain = this.ctx.createGain();
+          osc.type = 'sine';
+          osc.frequency.setValueAtTime(880, this.ctx.currentTime);
+          osc.frequency.exponentialRampToValueAtTime(440, this.ctx.currentTime + 0.04);
+          gain.gain.setValueAtTime(0.04, this.ctx.currentTime);
+          gain.gain.exponentialRampToValueAtTime(0.001, this.ctx.currentTime + 0.04);
+          osc.connect(gain);
+          gain.connect(this.ctx.destination);
+          osc.start();
+          osc.stop(this.ctx.currentTime + 0.04);
+        } catch (e) {}
+      }
+
+      playKey() {
+        if (this.muted) return;
+        this.init();
+        if (!this.ctx) return;
+        try {
+          const osc = this.ctx.createOscillator();
+          const gain = this.ctx.createGain();
+          osc.type = 'triangle';
+          osc.frequency.setValueAtTime(1400 + Math.random() * 200, this.ctx.currentTime);
+          gain.gain.setValueAtTime(0.03, this.ctx.currentTime);
+          gain.gain.exponentialRampToValueAtTime(0.001, this.ctx.currentTime + 0.03);
+          osc.connect(gain);
+          gain.connect(this.ctx.destination);
+          osc.start();
+          osc.stop(this.ctx.currentTime + 0.03);
+        } catch (e) {}
+      }
+
+      playSuccess() {
+        if (this.muted) return;
+        this.init();
+        if (!this.ctx) return;
+        try {
+          const now = this.ctx.currentTime;
+          [523.25, 659.25, 783.99, 1046.50].forEach((freq, i) => {
+            const osc = this.ctx.createOscillator();
+            const gain = this.ctx.createGain();
+            osc.type = 'sine';
+            osc.frequency.setValueAtTime(freq, now + i * 0.06);
+            gain.gain.setValueAtTime(0.03, now + i * 0.06);
+            gain.gain.exponentialRampToValueAtTime(0.001, now + i * 0.06 + 0.12);
+            osc.connect(gain);
+            gain.connect(this.ctx.destination);
+            osc.start(now + i * 0.06);
+            osc.stop(now + i * 0.06 + 0.12);
+          });
+        } catch (e) {}
+      }
+
+      playNodeSelect() {
+        if (this.muted) return;
+        this.init();
+        if (!this.ctx) return;
+        try {
+          const osc = this.ctx.createOscillator();
+          const gain = this.ctx.createGain();
+          osc.type = 'sine';
+          osc.frequency.setValueAtTime(1200, this.ctx.currentTime);
+          osc.frequency.exponentialRampToValueAtTime(1800, this.ctx.currentTime + 0.08);
+          gain.gain.setValueAtTime(0.05, this.ctx.currentTime);
+          gain.gain.exponentialRampToValueAtTime(0.001, this.ctx.currentTime + 0.1);
+          osc.connect(gain);
+          gain.connect(this.ctx.destination);
+          osc.start();
+          osc.stop(this.ctx.currentTime + 0.1);
+        } catch (e) {}
+      }
+
+      playSweep() {
+        if (this.muted) return;
+        this.init();
+        if (!this.ctx) return;
+        try {
+          const osc = this.ctx.createOscillator();
+          const gain = this.ctx.createGain();
+          osc.type = 'sawtooth';
+          osc.frequency.setValueAtTime(200, this.ctx.currentTime);
+          osc.frequency.exponentialRampToValueAtTime(1600, this.ctx.currentTime + 0.4);
+          gain.gain.setValueAtTime(0.04, this.ctx.currentTime);
+          gain.gain.exponentialRampToValueAtTime(0.001, this.ctx.currentTime + 0.4);
+          osc.connect(gain);
+          gain.connect(this.ctx.destination);
+          osc.start();
+          osc.stop(this.ctx.currentTime + 0.4);
+        } catch (e) {}
+      }
+    }
+
+    const sound = new SoundEngine();
+
+    /* ═════════════════════════════════════════════════════════════
+       INLINE CRISP SVG ICONS (100% Reliable, Fast & Zero Latency)
+       ═════════════════════════════════════════════════════════════ */
+    const Icons = {
+      Cpu: (props) => (
+        <svg className={props.className || "w-5 h-5"} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <rect x="4" y="4" width="16" height="16" rx="2" />
+          <rect x="9" y="9" width="6" height="6" />
+          <line x1="9" y1="1" x2="9" y2="4" /><line x1="15" y1="1" x2="15" y2="4" />
+          <line x1="9" y1="20" x2="9" y2="23" /><line x1="15" y1="20" x2="15" y2="23" />
+          <line x1="20" y1="9" x2="23" y2="9" /><line x1="20" y1="14" x2="23" y2="14" />
+          <line x1="1" y1="9" x2="4" y2="9" /><line x1="1" y1="14" x2="4" y2="14" />
+        </svg>
+      ),
+      Globe: (props) => (
+        <svg className={props.className || "w-5 h-5"} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <circle cx="12" cy="12" r="10" />
+          <line x1="2" y1="12" x2="22" y2="12" />
+          <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z" />
+        </svg>
+      ),
+      Terminal: (props) => (
+        <svg className={props.className || "w-5 h-5"} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <polyline points="4 17 10 11 4 5" /><line x1="12" y1="19" x2="20" y2="19" />
+        </svg>
+      ),
+      Zap: (props) => (
+        <svg className={props.className || "w-5 h-5"} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" />
+        </svg>
+      ),
+      Shield: (props) => (
+        <svg className={props.className || "w-5 h-5"} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
+        </svg>
+      ),
+      Bot: (props) => (
+        <svg className={props.className || "w-5 h-5"} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <rect x="3" y="11" width="18" height="10" rx="2" />
+          <circle cx="12" cy="5" r="2" /><path d="M12 7v4" />
+          <line x1="8" y1="16" x2="8" y2="16" /><line x1="16" y1="16" x2="16" y2="16" />
+        </svg>
+      ),
+      Activity: (props) => (
+        <svg className={props.className || "w-5 h-5"} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <polyline points="22 12 18 12 15 21 9 3 6 12 2 12" />
+        </svg>
+      ),
+      Volume2: (props) => (
+        <svg className={props.className || "w-5 h-5"} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5" />
+          <path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07" />
+        </svg>
+      ),
+      VolumeX: (props) => (
+        <svg className={props.className || "w-5 h-5"} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5" />
+          <line x1="23" y1="9" x2="17" y2="15" /><line x1="17" y1="9" x2="23" y2="15" />
+        </svg>
+      ),
+      Check: (props) => (
+        <svg className={props.className || "w-4 h-4"} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+          <polyline points="20 6 9 17 4 12" />
+        </svg>
+      ),
+      Send: (props) => (
+        <svg className={props.className || "w-4 h-4"} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <line x1="22" y1="2" x2="11" y2="13" />
+          <polygon points="22 2 15 22 11 13 2 9 22 2" />
+        </svg>
+      ),
+      RefreshCw: (props) => (
+        <svg className={props.className || "w-4 h-4"} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <polyline points="23 4 23 10 17 10" />
+          <polyline points="1 20 1 14 7 14" />
+          <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15" />
+        </svg>
+      ),
+      X: (props) => (
+        <svg className={props.className || "w-4 h-4"} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
+        </svg>
+      ),
+      Layers: (props) => (
+        <svg className={props.className || "w-5 h-5"} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <polygon points="12 2 2 7 12 12 22 7 12 2" />
+          <polyline points="2 17 12 22 22 17" />
+          <polyline points="2 12 12 17 22 12" />
+        </svg>
+      )
+    };
+
+    /* ═════════════════════════════════════════════════════════════
+       MOCK EDGE NODES DATA
+       ═════════════════════════════════════════════════════════════ */
+    const INITIAL_NODES = [
+      { id: 'iad-edge-01', region: 'US-East', city: 'Virginia, USA', status: 'Operational', ping: 12, conns: 18420, mem: '5.2/8 GB', load: '65%' },
+      { id: 'iad-edge-02', region: 'US-East', city: 'Virginia, USA', status: 'Operational', ping: 14, conns: 16190, mem: '4.8/8 GB', load: '60%' },
+      { id: 'ord-edge-01', region: 'US-East', city: 'Chicago, USA', status: 'Operational', ping: 18, conns: 12300, mem: '3.9/8 GB', load: '48%' },
+      
+      { id: 'fra-core-01', region: 'EU-Central', city: 'Frankfurt, DE', status: 'Operational', ping: 22, conns: 24150, mem: '6.4/8 GB', load: '80%' },
+      { id: 'fra-core-02', region: 'EU-Central', city: 'Frankfurt, DE', status: 'Degraded', ping: 89, conns: 31200, mem: '7.6/8 GB', load: '95%' },
+      { id: 'lhr-edge-01', region: 'EU-Central', city: 'London, UK', status: 'Operational', ping: 19, conns: 19800, mem: '5.5/8 GB', load: '68%' },
+
+      { id: 'sin-gateway-01', region: 'APAC-South', city: 'Singapore, SG', status: 'Operational', ping: 26, conns: 22100, mem: '5.8/8 GB', load: '72%' },
+      { id: 'bom-core-01', region: 'APAC-South', city: 'Mumbai, IN', status: 'Operational', ping: 32, conns: 17400, mem: '4.9/8 GB', load: '61%' },
+      { id: 'syd-edge-01', region: 'APAC-South', city: 'Sydney, AU', status: 'Standby', ping: 64, conns: 4200, mem: '2.1/8 GB', load: '26%' },
+
+      { id: 'hnd-neural-01', region: 'AP-Northeast', city: 'Tokyo, JP', status: 'Operational', ping: 15, conns: 26800, mem: '6.8/8 GB', load: '85%' },
+      { id: 'icn-edge-01', region: 'AP-Northeast', city: 'Seoul, KR', status: 'Operational', ping: 21, conns: 14200, mem: '4.3/8 GB', load: '53%' },
+      { id: 'nrt-core-02', region: 'AP-Northeast', city: 'Tokyo, JP', status: 'Degraded', ping: 94, conns: 28900, mem: '7.4/8 GB', load: '92%' }
+    ];
+
+    /* ═════════════════════════════════════════════════════════════
+       1. THREE.JS KINETIC NEURAL 3D ENGINE VIEW
+       ═════════════════════════════════════════════════════════════ */
+    function NeuralEngineView({ onSelectNode }) {
+      const containerRef = useRef(null);
+      const [selectedNodeData, setSelectedNodeData] = useState(null);
+      const [hexStream, setHexStream] = useState([]);
+      const [fps, setFps] = useState(60);
+
+      // Generate rolling hex codes
+      useEffect(() => {
+        const interval = setInterval(() => {
+          const codes = Array.from({ length: 8 }, () => '0x' + Math.floor(Math.random() * 0xFFFFFF).toString(16).toUpperCase().padStart(6, '0'));
+          setHexStream(codes);
+        }, 120);
+        return () => clearInterval(interval);
+      }, []);
+
+      // Three.js Canvas Mount
+      useEffect(() => {
+        const container = containerRef.current;
+        if (!container || !window.THREE) return;
+
+        const width = container.clientWidth;
+        const height = container.clientHeight;
+
+        const scene = new THREE.Scene();
+        scene.fog = new THREE.FogExp2(0x030307, 0.035);
+
+        const camera = new THREE.PerspectiveCamera(50, width / height, 0.1, 1000);
+        camera.position.set(0, 2, 11);
+
+        const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+        renderer.setSize(width, height);
+        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+        container.appendChild(renderer.domElement);
+
+        // Core Quantum Hulls
+        const coreGroup = new THREE.Group();
+        scene.add(coreGroup);
+
+        // Inner Icosahedron
+        const icoGeo = new THREE.IcosahedronGeometry(2.0, 1);
+        const icoMat = new THREE.MeshBasicMaterial({
+          color: 0x00f3ff,
+          wireframe: true,
+          transparent: true,
+          opacity: 0.6
+        });
+        const icoMesh = new THREE.Mesh(icoGeo, icoMat);
+        coreGroup.add(icoMesh);
+
+        // Outer Dodecahedron Hull
+        const dodecaGeo = new THREE.DodecahedronGeometry(2.7, 0);
+        const dodecaMat = new THREE.MeshBasicMaterial({
+          color: 0x8b5cf6,
+          wireframe: true,
+          transparent: true,
+          opacity: 0.25
+        });
+        const dodecaMesh = new THREE.Mesh(dodecaGeo, dodecaMat);
+        coreGroup.add(dodecaMesh);
+
+        // Glowing Center Point Light
+        const light = new THREE.PointLight(0x00f3ff, 2.5, 30);
+        coreGroup.add(light);
+
+        // Orbital Ring
+        const ringGeo = new THREE.TorusGeometry(4.8, 0.02, 16, 100);
+        const ringMat = new THREE.MeshBasicMaterial({ color: 0x00f3ff, transparent: true, opacity: 0.2 });
+        const ring = new THREE.Mesh(ringGeo, ringMat);
+        ring.rotation.x = Math.PI / 2;
+        scene.add(ring);
+
+        // Satellite Neural Nodes
+        const satelliteNodes = [];
+        const nodeCount = 8;
+        const nodeInfo = [
+          { name: 'Core Alpha', tensor: '[1024, 768]', tput: '384 GB/s', ping: '0.18ms', state: 'Active' },
+          { name: 'Transformer β', tensor: '[2048, 2048]', tput: '512 GB/s', ping: '0.24ms', state: 'Active' },
+          { name: 'Attention γ', tensor: '[512, 128]', tput: '192 GB/s', ping: '0.31ms', state: 'Active' },
+          { name: 'Latent Matrix δ', tensor: '[4096, 512]', tput: '420 GB/s', ping: '0.15ms', state: 'Active' },
+          { name: 'Edge Buffer ε', tensor: '[128, 64]', tput: '96 GB/s', ping: '0.09ms', state: 'Standby' },
+          { name: 'Kernel Dispatch ζ', tensor: '[1024, 1024]', tput: '256 GB/s', ping: '0.28ms', state: 'Active' },
+          { name: 'Quantum Shuffler η', tensor: '[512, 512]', tput: '310 GB/s', ping: '0.19ms', state: 'Active' },
+          { name: 'Synaptic Bridge θ', tensor: '[2048, 1024]', tput: '480 GB/s', ping: '0.22ms', state: 'Active' }
+        ];
+
+        const nodeGroup = new THREE.Group();
+        scene.add(nodeGroup);
+
+        for (let i = 0; i < nodeCount; i++) {
+          const angle = (i / nodeCount) * Math.PI * 2;
+          const radius = 4.8;
+          const sphereGeo = new THREE.SphereGeometry(0.24, 16, 16);
+          const sphereMat = new THREE.MeshBasicMaterial({ color: 0x00f3ff });
+          const sphere = new THREE.Mesh(sphereGeo, sphereMat);
+          sphere.position.set(Math.cos(angle) * radius, (Math.sin(i * 1.5) * 1.2), Math.sin(angle) * radius);
+          sphere.userData = { id: i, ...nodeInfo[i] };
+          nodeGroup.add(sphere);
+          satelliteNodes.push(sphere);
+
+          // Conduit Line connecting to core
+          const lineMat = new THREE.LineBasicMaterial({ color: 0x00f3ff, transparent: true, opacity: 0.25 });
+          const lineGeo = new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(0, 0, 0), sphere.position]);
+          const line = new THREE.Line(lineGeo, lineMat);
+          scene.add(line);
+        }
+
+        // Ambient Volumetric Dust Particles
+        const particleGeo = new THREE.BufferGeometry();
+        const pCount = 800;
+        const positions = new Float32Array(pCount * 3);
+        for (let i = 0; i < pCount * 3; i += 3) {
+          positions[i] = (Math.random() - 0.5) * 30;
+          positions[i + 1] = (Math.random() - 0.5) * 20;
+          positions[i + 2] = (Math.random() - 0.5) * 30;
+        }
+        particleGeo.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+        const particleMat = new THREE.PointsMaterial({ color: 0x00f3ff, size: 0.05, transparent: true, opacity: 0.35 });
+        const particles = new THREE.Points(particleGeo, particleMat);
+        scene.add(particles);
+
+        // Interactive Orbit / Raycasting
+        let mouseX = 0, mouseY = 0;
+        let isDragging = false;
+        let prevMouseX = 0, prevMouseY = 0;
+        let targetRotationX = 0, targetRotationY = 0;
+
+        const onMouseDown = (e) => {
+          isDragging = true;
+          prevMouseX = e.clientX;
+          prevMouseY = e.clientY;
+        };
+
+        const onMouseMove = (e) => {
+          if (isDragging) {
+            const deltaX = e.clientX - prevMouseX;
+            const deltaY = e.clientY - prevMouseY;
+            targetRotationY += deltaX * 0.005;
+            targetRotationX += deltaY * 0.005;
+            prevMouseX = e.clientX;
+            prevMouseY = e.clientY;
+          }
+        };
+
+        const onMouseUp = () => { isDragging = false; };
+
+        // Raycasting for node clicks
+        const raycaster = new THREE.Raycaster();
+        const mouse = new THREE.Vector2();
+
+        const onClick = (e) => {
+          const rect = renderer.domElement.getBoundingClientRect();
+          mouse.x = ((e.clientX - rect.left) / rect.width) * 2 - 1;
+          mouse.y = -((e.clientY - rect.top) / rect.height) * 2 + 1;
+
+          raycaster.setFromCamera(mouse, camera);
+          const intersects = raycaster.intersectObjects(satelliteNodes);
+
+          if (intersects.length > 0) {
+            const node = intersects[0].object.userData;
+            setSelectedNodeData(node);
+            sound.playNodeSelect();
+            if (onSelectNode) onSelectNode(node);
+          }
+        };
+
+        container.addEventListener('mousedown', onMouseDown);
+        window.addEventListener('mousemove', onMouseMove);
+        window.addEventListener('mouseup', onMouseUp);
+        container.addEventListener('click', onClick);
+
+        // Animation Loop
+        let animationFrameId;
+        let lastTime = performance.now();
+        let frameCount = 0;
+
+        const animate = () => {
+          animationFrameId = requestAnimationFrame(animate);
+
+          // Rotate Cores
+          icoMesh.rotation.x += 0.005;
+          icoMesh.rotation.y += 0.008;
+          dodecaMesh.rotation.x -= 0.003;
+          dodecaMesh.rotation.y -= 0.005;
+
+          // Orbit Core Group smoothly based on user drag
+          coreGroup.rotation.y += (targetRotationY - coreGroup.rotation.y) * 0.05;
+          coreGroup.rotation.x += (targetRotationX - coreGroup.rotation.x) * 0.05;
+          nodeGroup.rotation.y = coreGroup.rotation.y;
+          nodeGroup.rotation.x = coreGroup.rotation.x;
+
+          // Pulse Satellite Nodes
+          const time = Date.now() * 0.002;
+          satelliteNodes.forEach((node, idx) => {
+            node.position.y += Math.sin(time + idx) * 0.003;
+          });
+
+          // FPS calculation
+          frameCount++;
+          const curTime = performance.now();
+          if (curTime - lastTime >= 1000) {
+            setFps(Math.round((frameCount * 1000) / (curTime - lastTime)));
+            frameCount = 0;
+            lastTime = curTime;
+          }
+
+          renderer.render(scene, camera);
+        };
+
+        animate();
+
+        // Responsive Resize
+        const handleResize = () => {
+          if (!container) return;
+          const w = container.clientWidth;
+          const h = container.clientHeight;
+          camera.aspect = w / h;
+          camera.updateProjectionMatrix();
+          renderer.setSize(w, h);
+        };
+        window.addEventListener('resize', handleResize);
+
+        return () => {
+          cancelAnimationFrame(animationFrameId);
+          window.removeEventListener('resize', handleResize);
+          container.removeEventListener('mousedown', onMouseDown);
+          window.removeEventListener('mousemove', onMouseMove);
+          window.removeEventListener('mouseup', onMouseUp);
+          container.removeEventListener('click', onClick);
+          if (container.contains(renderer.domElement)) {
+            container.removeChild(renderer.domElement);
+          }
+        };
+      }, []);
+
+      return (
+        <div className="relative w-full h-[640px] lg:h-[720px] rounded-3xl overflow-hidden glass-card glass-card-cyan border border-[#00f3ff]/20">
+          {/* Three.js Canvas Container */}
+          <div ref={containerRef} className="w-full h-full cursor-grab active:cursor-grabbing" />
+
+          {/* Top Telemetry Overlay */}
+          <div className="absolute top-6 left-6 right-6 flex flex-wrap items-center justify-between gap-4 pointer-events-none">
+            <div className="flex items-center gap-3 bg-[#030307]/80 backdrop-blur-md px-4 py-2 rounded-xl border border-[#00f3ff]/30">
+              <span className="w-2.5 h-2.5 rounded-full bg-[#00f3ff] animate-ping" />
+              <span className="text-xs font-mono font-bold text-[#00f3ff] uppercase tracking-widest">
+                NEURAL_CORE::V2.4 ONLINE
+              </span>
+            </div>
+
+            <div className="flex items-center gap-3">
+              <div className="bg-[#030307]/80 backdrop-blur-md px-3 py-1.5 rounded-xl border border-white/10 font-mono text-xs">
+                <span className="text-gray-400">FPS:</span> <span className="text-emerald-400 font-bold">{fps}</span>
+              </div>
+              <div className="bg-[#030307]/80 backdrop-blur-md px-3 py-1.5 rounded-xl border border-white/10 font-mono text-xs">
+                <span className="text-gray-400">LATENCY:</span> <span className="text-[#00f3ff] font-bold">&lt;0.4ms</span>
+              </div>
+              <div className="bg-[#030307]/80 backdrop-blur-md px-3 py-1.5 rounded-xl border border-white/10 font-mono text-xs hidden sm:block">
+                <span className="text-gray-400">THROUGHPUT:</span> <span className="text-purple-400 font-bold">1.2 TB/s</span>
+              </div>
+            </div>
+          </div>
+
+          {/* Bottom Live Hex Stream & Controls */}
+          <div className="absolute bottom-6 left-6 right-6 flex flex-wrap items-end justify-between gap-4 pointer-events-none">
+            {/* Hex Readout */}
+            <div className="bg-[#030307]/90 backdrop-blur-xl p-4 rounded-2xl border border-white/10 max-w-md pointer-events-auto">
+              <div className="flex items-center justify-between gap-4 mb-2 pb-1 border-b border-white/10">
+                <div className="flex items-center gap-2">
+                  <Icons.Activity className="w-3.5 h-3.5 text-[#00f3ff]" />
+                  <span className="text-[10px] font-mono uppercase text-[#00f3ff] tracking-wider font-bold">
+                    NEURAL_OUTPUT_01
+                  </span>
+                </div>
+                <span className="text-[9px] font-mono text-emerald-400">QUANTUM_CRYPT: OK</span>
+              </div>
+              <div className="grid grid-cols-4 gap-1.5 font-mono text-[10px] text-[#00f3ff]/70">
+                {hexStream.map((code, i) => (
+                  <span key={i} className="hover:text-white transition-colors">{code}</span>
+                ))}
+              </div>
+            </div>
+
+            <div className="text-right text-[11px] font-mono text-gray-400 bg-[#030307]/80 px-4 py-2 rounded-xl border border-white/10 pointer-events-auto">
+              Drag to Orbit · Click Node to Inspect
+            </div>
+          </div>
+
+          {/* Node Inspector Modal Drawer */}
+          {selectedNodeData && (
+            <div className="absolute top-20 right-6 w-80 bg-[#080812]/95 backdrop-blur-2xl p-6 rounded-2xl border border-[#00f3ff]/40 shadow-2xl z-30">
+              <div className="flex items-center justify-between pb-3 border-b border-white/10 mb-4">
+                <div className="flex items-center gap-2">
+                  <div className="w-3 h-3 rounded-full bg-[#00f3ff] animate-pulse" />
+                  <h4 className="font-space font-bold text-white text-base">{selectedNodeData.name}</h4>
+                </div>
+                <button
+                  onClick={() => setSelectedNodeData(null)}
+                  className="text-gray-400 hover:text-white p-1 rounded-lg hover:bg-white/10 transition-colors"
+                >
+                  <Icons.X className="w-4 h-4" />
+                </button>
+              </div>
+
+              <div className="space-y-3 font-mono text-xs">
+                <div className="flex justify-between py-1 border-b border-white/5">
+                  <span className="text-gray-400">Tensor Dimensions</span>
+                  <span className="text-[#00f3ff] font-bold">{selectedNodeData.tensor}</span>
+                </div>
+                <div className="flex justify-between py-1 border-b border-white/5">
+                  <span className="text-gray-400">Throughput Velocity</span>
+                  <span className="text-emerald-400 font-bold">{selectedNodeData.tput}</span>
+                </div>
+                <div className="flex justify-between py-1 border-b border-white/5">
+                  <span className="text-gray-400">Bus Latency</span>
+                  <span className="text-purple-400 font-bold">{selectedNodeData.ping}</span>
+                </div>
+                <div className="flex justify-between py-1 border-b border-white/5">
+                  <span className="text-gray-400">Node Status</span>
+                  <span className="px-2 py-0.5 rounded-full text-[10px] bg-[#00f3ff]/10 text-[#00f3ff] border border-[#00f3ff]/30 font-bold">
+                    {selectedNodeData.state}
+                  </span>
+                </div>
+              </div>
+
+              <button
+                onClick={() => {
+                  sound.playSuccess();
+                  alert(`Dispatched telemetry sync probe to ${selectedNodeData.name}. Vector weights optimized.`);
+                }}
+                className="mt-5 w-full py-2.5 rounded-xl bg-gradient-to-r from-[#00f3ff] to-[#8b5cf6] text-black font-space font-bold text-xs uppercase tracking-wider hover:opacity-90 active:scale-98 transition-all"
+              >
+                Dispatch Probe
+              </button>
+            </div>
+          )}
+        </div>
+      );
+    }
+
+    /* ═════════════════════════════════════════════════════════════
+       2. GLOBAL EDGE CLUSTER MANAGEMENT VIEW
+       ═════════════════════════════════════════════════════════════ */
+    function EdgeFleetView() {
+      const [nodes, setNodes] = useState(INITIAL_NODES);
+      const [filter, setFilter] = useState('All');
+      const [rebalancing, setRebalancing] = useState(false);
+      const [rebalanceStep, setRebalanceStep] = useState(0);
+
+      const filteredNodes = useMemo(() => {
+        if (filter === 'All') return nodes;
+        return nodes.filter(n => n.region === filter);
+      }, [nodes, filter]);
+
+      const handlePingNode = (id) => {
+        sound.playClick();
+        setNodes(prev => prev.map(n => {
+          if (n.id === id) {
+            const newPing = Math.max(8, Math.round(n.ping + (Math.random() * 8 - 4)));
+            return { ...n, ping: newPing };
+          }
+          return n;
+        }));
+      };
+
+      const handleTriggerRebalance = () => {
+        sound.playSweep();
+        setRebalancing(true);
+        setRebalanceStep(1);
+
+        setTimeout(() => setRebalanceStep(2), 700);
+        setTimeout(() => setRebalanceStep(3), 1500);
+        setTimeout(() => {
+          setRebalanceStep(4);
+          sound.playSuccess();
+          // Heal degraded nodes and optimize pings
+          setNodes(prev => prev.map(n => ({
+            ...n,
+            status: 'Operational',
+            ping: Math.min(n.ping, Math.round(10 + Math.random() * 15)),
+            load: `${Math.round(45 + Math.random() * 20)}%`
+          })));
+        }, 2200);
+
+        setTimeout(() => {
+          setRebalancing(false);
+          setRebalanceStep(0);
+        }, 3200);
+      };
+
+      return (
+        <div className="space-y-8">
+          {/* Header & Rebalance Action Bar */}
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 p-6 rounded-3xl glass-card border border-white/10">
+            <div>
+              <div className="flex items-center gap-2 text-xs font-mono text-[#00f3ff] uppercase tracking-widest mb-1">
+                <Icons.Globe className="w-4 h-4" /> Global Edge Infrastructure
+              </div>
+              <h2 className="text-2xl font-space font-bold text-white">312 Distributed Edge Cluster Nodes</h2>
+              <p className="text-sm text-gray-300 mt-1">Multi-region mesh routing with sub-millisecond edge failover.</p>
+            </div>
+
+            <button
+              onClick={handleTriggerRebalance}
+              disabled={rebalancing}
+              className={`px-6 py-3 rounded-2xl font-space font-bold text-sm tracking-wide uppercase transition-all flex items-center gap-2 ${
+                rebalancing 
+                  ? 'bg-amber-500/20 text-amber-300 border border-amber-500/40 cursor-wait'
+                  : 'bg-gradient-to-r from-[#00f3ff] to-[#8b5cf6] text-black hover:shadow-[0_0_25px_rgba(0,243,255,0.4)] active:scale-95'
+              }`}
+            >
+              <Icons.RefreshCw className={`w-4 h-4 ${rebalancing ? 'animate-spin' : ''}`} />
+              {rebalancing ? `Rebalancing Step ${rebalanceStep}/4...` : 'Trigger Auto-Rebalance'}
+            </button>
+          </div>
+
+          {/* Regional Filters */}
+          <div className="flex gap-2 overflow-x-auto pb-2">
+            {['All', 'US-East', 'EU-Central', 'APAC-South', 'AP-Northeast'].map(tab => (
+              <button
+                key={tab}
+                onClick={() => { sound.playClick(); setFilter(tab); }}
+                className={`px-4 py-2 rounded-xl font-space text-xs font-bold transition-all whitespace-nowrap ${
+                  filter === tab
+                    ? 'bg-[#00f3ff]/15 text-[#00f3ff] border border-[#00f3ff]/40 shadow-[0_0_15px_rgba(0,243,255,0.15)]'
+                    : 'bg-white/5 text-gray-400 hover:text-white border border-white/5 hover:bg-white/10'
+                }`}
+              >
+                {tab}
+              </button>
+            ))}
+          </div>
+
+          {/* Rebalance Progress Notice */}
+          {rebalancing && (
+            <div className="p-4 rounded-2xl bg-amber-500/10 border border-amber-500/30 flex items-center justify-between text-xs font-mono text-amber-300 animate-pulse">
+              <span>
+                {rebalanceStep === 1 && "1/4: Sampling edge cluster load vectors across regional backbones..."}
+                {rebalanceStep === 2 && "2/4: Computing optimal Bellman-Ford weighted latency pathways..."}
+                {rebalanceStep === 3 && "3/4: Rerouting degraded socket connections to Standby nodes..."}
+                {rebalanceStep === 4 && "4/4: Cluster state fully synchronized! 100% Operational."}
+              </span>
+              <span className="font-bold">{rebalanceStep * 25}%</span>
+            </div>
+          )}
+
+          {/* Node Cards Grid */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+            {filteredNodes.map(node => (
+              <div 
+                key={node.id}
+                className="p-5 rounded-2xl glass-card border border-white/10 hover:border-[#00f3ff]/30 transition-all flex flex-col justify-between group"
+              >
+                <div>
+                  <div className="flex items-center justify-between mb-3">
+                    <span className="font-mono text-xs text-gray-400 font-bold uppercase">{node.id}</span>
+                    <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-mono font-bold tracking-wide uppercase flex items-center gap-1.5 ${
+                      node.status === 'Operational' ? 'bg-emerald-500/15 text-emerald-400 border border-emerald-500/30' :
+                      node.status === 'Degraded' ? 'bg-amber-500/15 text-amber-400 border border-amber-500/30' :
+                      'bg-cyan-500/15 text-cyan-300 border border-cyan-500/30'
+                    }`}>
+                      <span className="w-1.5 h-1.5 rounded-full bg-currentColor animate-pulse" />
+                      {node.status}
+                    </span>
+                  </div>
+
+                  <div className="font-space font-bold text-white text-base mb-1">{node.city}</div>
+                  <div className="text-xs text-gray-400 font-mono mb-4">{node.region}</div>
+
+                  <div className="grid grid-cols-2 gap-3 py-3 border-y border-white/5 font-mono text-xs">
+                    <div>
+                      <div className="text-gray-500 text-[10px] uppercase">Latency</div>
+                      <div className={`font-bold ${node.ping < 30 ? 'text-emerald-400' : node.ping < 60 ? 'text-amber-400' : 'text-rose-400'}`}>
+                        {node.ping} ms
+                      </div>
+                    </div>
+                    <div>
+                      <div className="text-gray-500 text-[10px] uppercase">Active Conns</div>
+                      <div className="text-white font-bold">{node.conns.toLocaleString()}</div>
+                    </div>
+                    <div>
+                      <div className="text-gray-500 text-[10px] uppercase">Memory</div>
+                      <div className="text-gray-300 font-bold">{node.mem}</div>
+                    </div>
+                    <div>
+                      <div className="text-gray-500 text-[10px] uppercase">Cluster Load</div>
+                      <div className="text-[#00f3ff] font-bold">{node.load}</div>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="mt-4 pt-2 flex items-center justify-between">
+                  <span className="text-[10px] font-mono text-gray-500">Encrypted Tunnel OK</span>
+                  <button
+                    onClick={() => handlePingNode(node.id)}
+                    className="px-3 py-1.5 rounded-lg bg-white/5 hover:bg-[#00f3ff]/20 text-[#00f3ff] hover:text-white border border-white/10 hover:border-[#00f3ff]/40 font-mono text-xs transition-all"
+                  >
+                    Ping Node
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      );
+    }
+
+    /* ═════════════════════════════════════════════════════════════
+       3. IN-BROWSER VIRTUAL TERMINAL CLI VIEW
+       ═════════════════════════════════════════════════════════════ */
+    function ConsoleView() {
+      const [history, setHistory] = useState([
+        { type: 'output', text: 'NexGen Spatial Engine [Version 2.4.0-Release]' },
+        { type: 'output', text: '(c) 2026 NexGen Distributed Systems. All quantum rights reserved.' },
+        { type: 'output', text: 'Type "help" to list operational commands or click quick actions above.' }
+      ]);
+      const [input, setInput] = useState('');
+      const [cmdHistory, setCmdHistory] = useState([]);
+      const [historyIndex, setHistoryIndex] = useState(-1);
+      const terminalBottomRef = useRef(null);
+
+      useEffect(() => {
+        terminalBottomRef.current?.scrollIntoView({ behavior: 'smooth' });
+      }, [history]);
+
+      const executeCommand = (rawCmd) => {
+        const cmd = rawCmd.trim();
+        if (!cmd) return;
+
+        sound.playClick();
+        setCmdHistory(prev => [cmd, ...prev]);
+        setHistoryIndex(-1);
+
+        const newHistory = [...history, { type: 'input', text: cmd }];
+
+        const lower = cmd.toLowerCase();
+        if (lower === 'clear') {
+          sound.playSuccess();
+          setHistory([]);
+          setInput('');
+          return;
+        }
+
+        if (lower === 'help') {
+          sound.playSuccess();
+          newHistory.push({
+            type: 'output',
+            text: `SUPPORTED SPATIAL CLI COMMANDS:
+  status         Output cluster health score & active telemetry metrics
+  nodes          List active edge nodes, locations & live ping response
+  deploy         Execute canary step-by-step release with verification
+  ping <target>  Measure simulated round-trip packet transmission time
+  stats          Display GPU shaders, WebGPU pipelines & memory buffers
+  whoami         Output current authenticated spatial architect session
+  version        Display NexGen engine release & kernel version
+  clear          Clear the virtual terminal buffer`
+          });
+        } else if (lower === 'status') {
+          sound.playSuccess();
+          newHistory.push({
+            type: 'output',
+            text: `[SYSTEM DIAGNOSTIC REPORT]
+  CLUSTER HEALTH:       99.98% (OPTIMAL)
+  ACTIVE EDGE NODES:    312 / 312
+  AVERAGE BUS PING:     0.32 ms
+  THROUGHPUT VOLUME:    1.24 TB/s
+  QUANTUM SHIELD:       ARMED (AES-GCM-256 / KYBER-1024)
+  WEBGPU PIPELINE:      SYNCHRONIZED (60 FPS)`
+          });
+        } else if (lower === 'nodes') {
+          sound.playSuccess();
+          newHistory.push({
+            type: 'output',
+            text: `ID              REGION         CITY             STATUS         PING
+iad-edge-01     US-East        Virginia, USA    Operational    12ms
+fra-core-01     EU-Central     Frankfurt, DE    Operational    22ms
+sin-gateway-01  APAC-South     Singapore, SG    Operational    26ms
+hnd-neural-01   AP-Northeast   Tokyo, JP        Operational    15ms`
+          });
+        } else if (lower.startsWith('deploy')) {
+          sound.playSweep();
+          newHistory.push({
+            type: 'output',
+            text: `>>> INITIATING ZERO-DOWNTIME CANARY RELEASE...
+  [1/4] Compiling WebGPU spatial shaders.......... [DONE]
+  [2/4] Distributing shard to US-East (iad)....... [██████████] 100%
+  [3/4] Distributing shard to EU-Central (fra).... [██████████] 100%
+  [4/4] Verifying cryptographic consensus......... [OK]
+DEPLOYMENT SUCCESS: Build 2026.10-Live deployed across 312 nodes.`
+          });
+        } else if (lower.startsWith('ping')) {
+          const target = cmd.split(' ')[1] || 'iad-edge-01';
+          sound.playClick();
+          newHistory.push({
+            type: 'output',
+            text: `PING ${target} (54.239.28.85): 56 data bytes
+64 bytes from 54.239.28.85: icmp_seq=0 ttl=57 time=12.4 ms
+64 bytes from 54.239.28.85: icmp_seq=1 ttl=57 time=12.1 ms
+64 bytes from 54.239.28.85: icmp_seq=2 ttl=57 time=11.9 ms
+--- ${target} ping statistics ---
+3 packets transmitted, 3 packets received, 0.0% packet loss`
+          });
+        } else if (lower === 'stats') {
+          sound.playSuccess();
+          newHistory.push({
+            type: 'output',
+            text: `GPU PIPELINES:      18 Concurrent Render Passes
+BUFFER ALLOCATION:  512 MB Uniform Arrays
+VERTEX DRAW CALLS:  1,420 / frame
+MEMORY CEILING:     16.0 GB (Hardware Virtualized)`
+          });
+        } else if (lower === 'whoami') {
+          newHistory.push({
+            type: 'output',
+            text: `SESSION: root@spatial-core.nexgen.io (Role: Principal Spatial Architect)`
+          });
+        } else if (lower === 'version') {
+          newHistory.push({
+            type: 'output',
+            text: `NexGen Spatial Kernel v2.4.0 (x86_64-quantum-apple-darwin24.0)`
+          });
+        } else {
+          newHistory.push({
+            type: 'output',
+            text: `Command not recognized: "${cmd}". Type "help" for available commands.`
+          });
+        }
+
+        setHistory(newHistory);
+        setInput('');
+      };
+
+      const handleKeyDown = (e) => {
+        sound.playKey();
+        if (e.key === 'Enter') {
+          executeCommand(input);
+        } else if (e.key === 'ArrowUp') {
+          e.preventDefault();
+          if (cmdHistory.length > 0 && historyIndex < cmdHistory.length - 1) {
+            const nextIdx = historyIndex + 1;
+            setHistoryIndex(nextIdx);
+            setInput(cmdHistory[nextIdx]);
+          }
+        } else if (e.key === 'ArrowDown') {
+          e.preventDefault();
+          if (historyIndex > 0) {
+            const nextIdx = historyIndex - 1;
+            setHistoryIndex(nextIdx);
+            setInput(cmdHistory[nextIdx]);
+          } else if (historyIndex === 0) {
+            setHistoryIndex(-1);
+            setInput('');
+          }
+        }
+      };
+
+      return (
+        <div className="p-6 rounded-3xl glass-card border border-[#00f3ff]/20 flex flex-col h-[640px]">
+          {/* Quick Command Chips */}
+          <div className="flex flex-wrap items-center gap-2 pb-4 mb-4 border-b border-white/10">
+            <span className="text-xs font-mono text-gray-400 mr-2">Quick Actions:</span>
+            {['status', 'nodes', 'deploy', 'ping fra-01', 'stats', 'clear'].map(chip => (
+              <button
+                key={chip}
+                onClick={() => executeCommand(chip)}
+                className="px-3 py-1 rounded-lg bg-white/5 hover:bg-[#00f3ff]/20 text-gray-300 hover:text-[#00f3ff] border border-white/10 hover:border-[#00f3ff]/30 font-mono text-xs transition-colors"
+              >
+                {chip}
+              </button>
+            ))}
+          </div>
+
+          {/* Terminal Output */}
+          <div className="flex-1 overflow-y-auto space-y-3 font-mono text-xs text-slate-300 pr-2">
+            {history.map((line, idx) => (
+              <div key={idx} className="leading-relaxed">
+                {line.type === 'input' ? (
+                  <div className="flex items-center gap-2 text-[#00f3ff]">
+                    <span className="text-gray-500">nexgen@spatial-core:~#</span>
+                    <span className="font-bold text-white">{line.text}</span>
+                  </div>
+                ) : (
+                  <pre className="whitespace-pre-wrap font-mono text-slate-300 opacity-90">{line.text}</pre>
+                )}
+              </div>
+            ))}
+            <div ref={terminalBottomRef} />
+          </div>
+
+          {/* Input Line */}
+          <div className="mt-4 pt-3 border-t border-white/10 flex items-center gap-2 font-mono text-sm">
+            <span className="text-[#00f3ff] font-bold">nexgen@spatial-core:~#</span>
+            <input
+              type="text"
+              value={input}
+              onChange={(e) => setInput(e.target.value)}
+              onKeyDown={handleKeyDown}
+              placeholder="Type command ('help', 'status', 'deploy')..."
+              className="flex-1 bg-transparent text-white outline-none placeholder-gray-600 font-mono"
+              autoFocus
+            />
+            <span className="terminal-cursor" />
+          </div>
+        </div>
+      );
+    }
+
+    /* ═════════════════════════════════════════════════════════════
+       4. NEX AI EMBEDDED ASSISTANT
+       ═════════════════════════════════════════════════════════════ */
+    function NexAIAssistant() {
+      const [isOpen, setIsOpen] = useState(false);
+      const [messages, setMessages] = useState([
+        {
+          role: 'assistant',
+          text: 'Greetings, Architect. I am Nex AI, your spatial copilot. Ask me about deploying custom shaders, configuring edge clusters, or optimizing neural tensor throughput.'
+        }
+      ]);
+      const [input, setInput] = useState('');
+      const [typing, setTyping] = useState(false);
+      const chatEndRef = useRef(null);
+
+      useEffect(() => {
+        chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+      }, [messages, typing]);
+
+      const askPrompt = (promptText) => {
+        sound.playClick();
+        const userMsg = { role: 'user', text: promptText };
+        setMessages(prev => [...prev, userMsg]);
+        setTyping(true);
+
+        setTimeout(() => {
+          let reply = "I've analyzed your telemetry request. Spatial synchronization is optimal.";
+          const q = promptText.toLowerCase();
+
+          if (q.includes('shader') || q.includes('webgl') || q.includes('webgpu')) {
+            reply = "To deploy custom WGSL/GLSL shaders to the NexGen engine: 1) Define your fragment & compute stages in /shaders/spatial.wgsl, 2) Bind the uniform tensor buffers with engine.bindTensor('INPUT_0'), 3) Execute 'deploy' in the terminal CLI.";
+          } else if (q.includes('price') || q.includes('cost') || q.includes('pricing') || q.includes('plan')) {
+            reply = "NexGen features three subscription tiers: Hobby ($0/mo, 1K calls/day), Pro ($49/mo, 100K calls/day + Neural API access), and Enterprise (Custom SLA, dedicated edge nodes, and unmetered throughput).";
+          } else if (q.includes('failover') || q.includes('node') || q.includes('cluster')) {
+            reply = "Automated node failover is governed by our distributed consensus daemon. If any edge node ping exceeds 80ms or packet loss hits 2%, ingress routes dynamically switch to neighboring standby nodes in <3ms.";
+          } else if (q.includes('latency') || q.includes('speed')) {
+            reply = "Average global round-trip latency across our 312 CDN nodes is currently 13.8ms. Bus latency inside the 3D neural matrix visualizer runs at sub-millisecond speeds (<0.4ms).";
+          }
+
+          sound.playSuccess();
+          setMessages(prev => [...prev, { role: 'assistant', text: reply }]);
+          setTyping(false);
+        }, 800);
+      };
+
+      const handleSend = () => {
+        if (!input.trim() || typing) return;
+        const text = input;
+        setInput('');
+        askPrompt(text);
+      };
+
+      return (
+        <>
+          {/* Floating Action Button */}
+          <button
+            onClick={() => { sound.playClick(); setIsOpen(!isOpen); }}
+            aria-label="Open Nex AI Assistant"
+            className="fixed bottom-6 right-6 z-50 w-14 h-14 rounded-2xl bg-gradient-to-br from-[#00f3ff] to-[#8b5cf6] text-black shadow-[0_0_30px_rgba(0,243,255,0.5)] flex items-center justify-center hover:scale-105 active:scale-95 transition-all"
+          >
+            {isOpen ? <Icons.X className="w-6 h-6" /> : <Icons.Bot className="w-6 h-6" />}
+          </button>
+
+          {/* AI Chat Drawer */}
+          {isOpen && (
+            <div className="fixed bottom-24 right-6 w-96 max-w-[calc(100vw-3rem)] h-[520px] rounded-3xl glass-card glass-card-cyan border border-[#00f3ff]/40 shadow-2xl z-50 flex flex-col overflow-hidden animate-in fade-in slide-in-from-bottom-4 duration-300">
+              {/* Header */}
+              <div className="p-4 bg-[#030307]/90 border-b border-white/10 flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-[#00f3ff] to-[#8b5cf6] flex items-center justify-center text-black">
+                    <Icons.Bot className="w-4 h-4" />
+                  </div>
+                  <div>
+                    <h4 className="font-space font-bold text-white text-sm">Nex AI Copilot</h4>
+                    <span className="text-[10px] font-mono text-emerald-400">Online · v3.2 Neural Assistant</span>
+                  </div>
+                </div>
+                <button
+                  onClick={() => setIsOpen(false)}
+                  className="text-gray-400 hover:text-white p-1 rounded-lg hover:bg-white/10 transition-colors"
+                >
+                  <Icons.X className="w-4 h-4" />
+                </button>
+              </div>
+
+              {/* Message List */}
+              <div className="flex-1 overflow-y-auto p-4 space-y-3 font-sans text-xs">
+                {messages.map((msg, i) => (
+                  <div
+                    key={i}
+                    className={`flex flex-col ${msg.role === 'user' ? 'items-end' : 'items-start'}`}
+                  >
+                    <div
+                      className={`max-w-[85%] p-3.5 rounded-2xl leading-relaxed ${
+                        msg.role === 'user'
+                          ? 'bg-gradient-to-r from-[#00f3ff] to-[#8b5cf6] text-black font-medium'
+                          : 'bg-white/5 border border-white/10 text-slate-200'
+                      }`}
+                    >
+                      {msg.text}
+                    </div>
+                  </div>
+                ))}
+                {typing && (
+                  <div className="flex items-center gap-1.5 p-3 rounded-2xl bg-white/5 border border-white/10 w-max text-xs text-gray-400 font-mono animate-pulse">
+                    <span className="w-1.5 h-1.5 rounded-full bg-[#00f3ff]" />
+                    <span>Nex is streaming response...</span>
+                  </div>
+                )}
+                <div ref={chatEndRef} />
+              </div>
+
+              {/* Preset Shortcuts */}
+              <div className="px-3 py-2 bg-[#030307]/80 border-t border-white/5 flex gap-1.5 overflow-x-auto text-[10px] font-mono">
+                {["Deploy custom shaders", "Explain pricing", "Node failover setup"].map((txt, idx) => (
+                  <button
+                    key={idx}
+                    onClick={() => askPrompt(txt)}
+                    className="px-2.5 py-1 rounded-lg bg-white/5 hover:bg-[#00f3ff]/15 text-gray-300 hover:text-[#00f3ff] border border-white/10 whitespace-nowrap transition-colors"
+                  >
+                    {txt}
+                  </button>
+                ))}
+              </div>
+
+              {/* Input Box */}
+              <div className="p-3 bg-[#030307] border-t border-white/10 flex items-center gap-2">
+                <input
+                  type="text"
+                  value={input}
+                  onChange={(e) => setInput(e.target.value)}
+                  onKeyDown={(e) => e.key === 'Enter' && handleSend()}
+                  placeholder="Ask Nex anything..."
+                  className="flex-1 bg-white/5 text-white text-xs px-3.5 py-2.5 rounded-xl border border-white/10 outline-none focus:border-[#00f3ff]/50"
+                />
+                <button
+                  onClick={handleSend}
+                  className="p-2.5 rounded-xl bg-gradient-to-r from-[#00f3ff] to-[#8b5cf6] text-black font-bold hover:opacity-90 active:scale-95 transition-all"
+                >
+                  <Icons.Send className="w-3.5 h-3.5" />
+                </button>
+              </div>
+            </div>
+          )}
+        </>
+      );
+    }
+
+    /* ═════════════════════════════════════════════════════════════
+       5. SUBSCRIPTION & THROUGHPUT CALCULATOR VIEW
+       ═════════════════════════════════════════════════════════════ */
+    function PricingCalculatorView() {
+      const [dailyCalls, setDailyCalls] = useState(100000);
+      const [annual, setAnnual] = useState(true);
+
+      const computedStats = useMemo(() => {
+        const rps = (dailyCalls / 86400).toFixed(1);
+        const bandwidthGB = ((dailyCalls * 12) / (1024 * 1024)).toFixed(1);
+        
+        let recommendedTier = 'Hobby';
+        let estimatedCost = 0;
+
+        if (dailyCalls <= 5000) {
+          recommendedTier = 'Hobby';
+          estimatedCost = 0;
+        } else if (dailyCalls <= 500000) {
+          recommendedTier = 'Pro';
+          estimatedCost = annual ? 39 : 49;
+        } else {
+          recommendedTier = 'Enterprise';
+          estimatedCost = Math.round((dailyCalls / 100000) * 45 * (annual ? 0.8 : 1.0));
+        }
+
+        return { rps, bandwidthGB, recommendedTier, estimatedCost };
+      }, [dailyCalls, annual]);
+
+      return (
+        <div className="space-y-12">
+          {/* Section Header */}
+          <div className="text-center max-w-3xl mx-auto space-y-3">
+            <span className="px-4 py-1.5 rounded-full text-xs font-mono font-bold tracking-widest uppercase bg-[#00f3ff]/10 text-[#00f3ff] border border-[#00f3ff]/30">
+              Deterministic Pricing
+            </span>
+            <h2 className="text-4xl md:text-5xl font-space font-black text-white tracking-tight">
+              Scale Without Infrastructure Bottlenecks
+            </h2>
+            <p className="text-gray-300 text-sm md:text-base leading-relaxed">
+              Transparent, usage-aligned subscription tiers powered by distributed global edge nodes.
+            </p>
+          </div>
+
+          {/* Interactive Throughput Slider Card */}
+          <div className="p-8 rounded-3xl glass-card border border-[#00f3ff]/30 max-w-4xl mx-auto">
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
+              <div>
+                <h3 className="font-space font-bold text-white text-lg">Daily Request Velocity Simulator</h3>
+                <p className="text-xs text-gray-400 font-mono">Drag to estimate bandwidth, RPS, and plan recommendation.</p>
+              </div>
+
+              {/* Annual Toggle */}
+              <div className="flex items-center gap-3 bg-white/5 p-1 rounded-xl border border-white/10 text-xs font-mono">
+                <button
+                  onClick={() => { sound.playClick(); setAnnual(false); }}
+                  className={`px-3 py-1.5 rounded-lg transition-colors ${!annual ? 'bg-white/15 text-white font-bold' : 'text-gray-400'}`}
+                >
+                  Monthly
+                </button>
+                <button
+                  onClick={() => { sound.playClick(); setAnnual(true); }}
+                  className={`px-3 py-1.5 rounded-lg transition-colors flex items-center gap-1.5 ${annual ? 'bg-[#00f3ff] text-black font-bold' : 'text-gray-400'}`}
+                >
+                  <span>Annual</span>
+                  <span className="text-[10px] bg-black/30 text-black px-1.5 rounded font-bold">-20%</span>
+                </button>
+              </div>
+            </div>
+
+            {/* Slider */}
+            <div className="space-y-4 my-6">
+              <input
+                type="range"
+                min="1000"
+                max="2000000"
+                step="5000"
+                value={dailyCalls}
+                onChange={(e) => { sound.playKey(); setDailyCalls(Number(e.target.value)); }}
+                className="w-full h-2 bg-white/10 rounded-lg appearance-none cursor-pointer accent-[#00f3ff]"
+              />
+              <div className="flex justify-between font-mono text-xs text-gray-400">
+                <span>1K calls/day</span>
+                <span className="text-[#00f3ff] font-bold text-base font-space">{dailyCalls.toLocaleString()} calls / day</span>
+                <span>2M+ calls/day</span>
+              </div>
+            </div>
+
+            {/* Simulated Output Metrics */}
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 p-4 rounded-2xl bg-white/5 border border-white/5 font-mono text-xs">
+              <div>
+                <span className="text-gray-500 block text-[10px] uppercase">RPS (Rate)</span>
+                <span className="font-bold text-white text-sm">{computedStats.rps} req/sec</span>
+              </div>
+              <div>
+                <span className="text-gray-500 block text-[10px] uppercase">Est. Egress</span>
+                <span className="font-bold text-purple-400 text-sm">{computedStats.bandwidthGB} GB / day</span>
+              </div>
+              <div>
+                <span className="text-gray-500 block text-[10px] uppercase">Optimal Tier</span>
+                <span className="font-bold text-[#00f3ff] text-sm">{computedStats.recommendedTier}</span>
+              </div>
+              <div>
+                <span className="text-gray-500 block text-[10px] uppercase">Est. Cost</span>
+                <span className="font-bold text-emerald-400 text-sm">
+                  {computedStats.estimatedCost === 0 ? 'FREE' : `$${computedStats.estimatedCost}/mo`}
+                </span>
+              </div>
+            </div>
+          </div>
+
+          {/* Pricing Tier Cards */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-6xl mx-auto">
+            {/* Hobby Plan */}
+            <div className={`p-8 rounded-3xl glass-card border transition-all flex flex-col justify-between ${
+              computedStats.recommendedTier === 'Hobby' ? 'border-[#00f3ff] shadow-[0_0_30px_rgba(0,243,255,0.2)]' : 'border-white/10'
+            }`}>
+              <div>
+                <div className="font-space font-bold text-lg text-white mb-2">Hobby Plan</div>
+                <p className="text-xs text-gray-400 mb-6">Ideal for independent researchers and proto-engine testbeds.</p>
+                <div className="text-4xl font-black text-white font-space mb-6">
+                  $0 <span className="text-xs text-gray-400 font-mono font-normal">/ forever</span>
+                </div>
+                <ul className="space-y-3 text-xs text-gray-300 font-sans mb-8">
+                  <li className="flex items-center gap-2.5">
+                    <Icons.Check className="w-4 h-4 text-[#00f3ff]" /> Up to 5,000 API calls / day
+                  </li>
+                  <li className="flex items-center gap-2.5">
+                    <Icons.Check className="w-4 h-4 text-[#00f3ff]" /> Standard WebGL 3D rendering
+                  </li>
+                  <li className="flex items-center gap-2.5">
+                    <Icons.Check className="w-4 h-4 text-[#00f3ff]" /> Public community Discord support
+                  </li>
+                  <li className="flex items-center gap-2.5">
+                    <Icons.Check className="w-4 h-4 text-[#00f3ff]" /> 1 Regional edge cluster
+                  </li>
+                </ul>
+              </div>
+              <button
+                onClick={() => { sound.playSuccess(); alert('Hobby license activated.'); }}
+                className="w-full py-3 rounded-2xl bg-white/10 hover:bg-white/20 text-white font-space font-bold text-xs uppercase tracking-wider transition-colors"
+              >
+                Start Free
+              </button>
+            </div>
+
+            {/* Pro Plan */}
+            <div className={`p-8 rounded-3xl glass-card border relative flex flex-col justify-between ${
+              computedStats.recommendedTier === 'Pro' ? 'border-[#00f3ff] shadow-[0_0_35px_rgba(0,243,255,0.3)]' : 'border-[#00f3ff]/40'
+            }`}>
+              <div className="absolute -top-3.5 left-1/2 -translate-x-1/2 px-4 py-1 rounded-full bg-gradient-to-r from-[#00f3ff] to-[#8b5cf6] text-black font-space font-bold text-[10px] uppercase tracking-widest shadow-lg">
+                Most Popular
+              </div>
+              <div>
+                <div className="font-space font-bold text-lg text-white mb-2">Pro Engine</div>
+                <p className="text-xs text-gray-400 mb-6">Production-ready spatial environments with Neural API access.</p>
+                <div className="text-4xl font-black text-white font-space mb-6">
+                  ${annual ? '39' : '49'} <span className="text-xs text-gray-400 font-mono font-normal">/ month</span>
+                </div>
+                <ul className="space-y-3 text-xs text-gray-300 font-sans mb-8">
+                  <li className="flex items-center gap-2.5">
+                    <Icons.Check className="w-4 h-4 text-[#00f3ff]" /> 100,000 API calls / day
+                  </li>
+                  <li className="flex items-center gap-2.5">
+                    <Icons.Check className="w-4 h-4 text-[#00f3ff]" /> WebGPU Neural API Shader Access
+                  </li>
+                  <li className="flex items-center gap-2.5">
+                    <Icons.Check className="w-4 h-4 text-[#00f3ff]" /> 4 Global edge regions (US, EU, APAC)
+                  </li>
+                  <li className="flex items-center gap-2.5">
+                    <Icons.Check className="w-4 h-4 text-[#00f3ff]" /> Sub-millisecond matrix bus
+                  </li>
+                  <li className="flex items-center gap-2.5">
+                    <Icons.Check className="w-4 h-4 text-[#00f3ff]" /> Priority Slack engineering channel
+                  </li>
+                </ul>
+              </div>
+              <button
+                onClick={() => { sound.playSuccess(); alert('Redirecting to Pro Engine checkout...'); }}
+                className="w-full py-3 rounded-2xl bg-gradient-to-r from-[#00f3ff] to-[#8b5cf6] text-black font-space font-bold text-xs uppercase tracking-wider hover:opacity-95 transition-opacity"
+              >
+                Deploy Pro Cluster
+              </button>
+            </div>
+
+            {/* Enterprise Plan */}
+            <div className={`p-8 rounded-3xl glass-card border transition-all flex flex-col justify-between ${
+              computedStats.recommendedTier === 'Enterprise' ? 'border-[#00f3ff] shadow-[0_0_30px_rgba(0,243,255,0.2)]' : 'border-white/10'
+            }`}>
+              <div>
+                <div className="font-space font-bold text-lg text-white mb-2">Enterprise Dedicated</div>
+                <p className="text-xs text-gray-400 mb-6">Dedicated isolated nodes for massive throughput workloads.</p>
+                <div className="text-4xl font-black text-white font-space mb-6">
+                  Custom <span className="text-xs text-gray-400 font-mono font-normal">/ unmetered</span>
+                </div>
+                <ul className="space-y-3 text-xs text-gray-300 font-sans mb-8">
+                  <li className="flex items-center gap-2.5">
+                    <Icons.Check className="w-4 h-4 text-[#00f3ff]" /> Unlimited daily requests
+                  </li>
+                  <li className="flex items-center gap-2.5">
+                    <Icons.Check className="w-4 h-4 text-[#00f3ff]" /> Dedicated bare-metal CDN edge nodes
+                  </li>
+                  <li className="flex items-center gap-2.5">
+                    <Icons.Check className="w-4 h-4 text-[#00f3ff]" /> 99.999% SLA guarantee with credits
+                  </li>
+                  <li className="flex items-center gap-2.5">
+                    <Icons.Check className="w-4 h-4 text-[#00f3ff]" /> SSO + SAML + Audit Vault logging
+                  </li>
+                  <li className="flex items-center gap-2.5">
+                    <Icons.Check className="w-4 h-4 text-[#00f3ff]" /> Custom on-premises deployment
+                  </li>
+                </ul>
+              </div>
+              <button
+                onClick={() => { sound.playSuccess(); window.location.href = 'mailto:enterprise@nexgen.io?subject=Enterprise Inquiry'; }}
+                className="w-full py-3 rounded-2xl bg-white/10 hover:bg-white/20 text-white font-space font-bold text-xs uppercase tracking-wider transition-colors"
+              >
+                Contact Enterprise
+              </button>
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    /* ═════════════════════════════════════════════════════════════
+       6. SECURITY, PRIVACY & TELEMETRY SHIELD VIEW
+       ═════════════════════════════════════════════════════════════ */
+    function SecurityShieldView() {
+      const [telemetry, setTelemetry] = useState(true);
+      const [analytics, setAnalytics] = useState(true);
+
+      const handleSave = () => {
+        sound.playSuccess();
+        localStorage.setItem('nexgen_security_prefs', JSON.stringify({ telemetry, analytics, date: new Date().toISOString() }));
+        alert('Privacy & Telemetry preferences securely committed.');
+      };
+
+      return (
+        <div className="max-w-4xl mx-auto space-y-8">
+          <div className="p-8 rounded-3xl glass-card border border-[#00f3ff]/30 space-y-6">
+            <div className="flex items-center gap-3 pb-4 border-b border-white/10">
+              <div className="w-10 h-10 rounded-2xl bg-[#00f3ff]/10 border border-[#00f3ff]/30 flex items-center justify-center text-[#00f3ff]">
+                <Icons.Shield className="w-5 h-5" />
+              </div>
+              <div>
+                <h3 className="text-xl font-space font-bold text-white">Quantum Security &amp; Anti-Bot Defense</h3>
+                <p className="text-xs text-gray-400 font-mono">Zero frontend secrets, CSRF tokens, and client rate-limiting.</p>
+              </div>
+            </div>
+
+            {/* Security Audit Badges */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="p-4 rounded-2xl bg-white/5 border border-white/5">
+                <div className="flex items-center gap-2 text-emerald-400 text-xs font-mono font-bold mb-1">
+                  <Icons.Check className="w-4 h-4" /> SECRETS AUDIT: PASSED
+                </div>
+                <p className="text-xs text-gray-300">0 private keys in bundle. All credentials vault-isolated.</p>
+              </div>
+
+              <div className="p-4 rounded-2xl bg-white/5 border border-white/5">
+                <div className="flex items-center gap-2 text-emerald-400 text-xs font-mono font-bold mb-1">
+                  <Icons.Check className="w-4 h-4" /> BOT HONEYPOT: ARMED
+                </div>
+                <p className="text-xs text-gray-300">Invisible traps active. 0 automated intrusions detected.</p>
+              </div>
+
+              <div className="p-4 rounded-2xl bg-white/5 border border-white/5">
+                <div className="flex items-center gap-2 text-emerald-400 text-xs font-mono font-bold mb-1">
+                  <Icons.Check className="w-4 h-4" /> RATE LIMITER: 2.0s
+                </div>
+                <p className="text-xs text-gray-300">Rapid-fire submissions throttled at client boundary.</p>
+              </div>
+            </div>
+
+            {/* Telemetry Consent Controls */}
+            <div className="space-y-4 pt-4 border-t border-white/10">
+              <h4 className="font-space font-bold text-white text-base">Privacy &amp; Cookie Consent Toggles</h4>
+              
+              <div className="flex items-center justify-between p-4 rounded-2xl bg-white/5 border border-white/5">
+                <div>
+                  <div className="font-space font-bold text-white text-sm">Essential Cluster Routing</div>
+                  <div className="text-xs text-gray-400">Required for sub-millisecond edge websocket handshake.</div>
+                </div>
+                <span className="text-xs font-mono text-emerald-400 font-bold uppercase">Locked ON</span>
+              </div>
+
+              <div className="flex items-center justify-between p-4 rounded-2xl bg-white/5 border border-white/5">
+                <div>
+                  <div className="font-space font-bold text-white text-sm">Spatial Neural Telemetry</div>
+                  <div className="text-xs text-gray-400">Transmits anonymous tensor throughput vectors to train local models.</div>
+                </div>
+                <input
+                  type="checkbox"
+                  checked={telemetry}
+                  onChange={(e) => { sound.playClick(); setTelemetry(e.target.checked); }}
+                  className="w-5 h-5 accent-[#00f3ff] cursor-pointer"
+                />
+              </div>
+
+              <div className="flex items-center justify-between p-4 rounded-2xl bg-white/5 border border-white/5">
+                <div>
+                  <div className="font-space font-bold text-white text-sm">Performance Heatmap Metrics</div>
+                  <div className="text-xs text-gray-400">Samples WebGPU shader compile times for latency optimization.</div>
+                </div>
+                <input
+                  type="checkbox"
+                  checked={analytics}
+                  onChange={(e) => { sound.playClick(); setAnalytics(e.target.checked); }}
+                  className="w-5 h-5 accent-[#00f3ff] cursor-pointer"
+                />
+              </div>
+            </div>
+
+            <button
+              onClick={handleSave}
+              className="w-full py-3 rounded-2xl bg-gradient-to-r from-[#00f3ff] to-[#8b5cf6] text-black font-space font-bold text-xs uppercase tracking-wider hover:opacity-95 transition-opacity"
+            >
+              Commit Privacy Preferences
+            </button>
+          </div>
+        </div>
+      );
+    }
+
+    /* ═════════════════════════════════════════════════════════════
+       7. MAIN APPLICATION CONTROLLER & NAVIGATION
+       ═════════════════════════════════════════════════════════════ */
+    function App() {
+      const [activeTab, setActiveTab] = useState('engine');
+      const [muted, setMuted] = useState(false);
+
+      const toggleSound = () => {
+        const isMute = sound.toggleMute();
+        setMuted(isMute);
+        if (!isMute) sound.playSuccess();
+      };
+
+      return (
+        <div className="min-h-screen flex flex-col telemetry-grid">
+          {/* Top Cyberpunk Telemetry Navbar */}
+          <header className="sticky top-0 z-40 bg-[#030307]/80 backdrop-blur-xl border-b border-white/10 px-6 py-4">
+            <div className="max-w-7xl mx-auto flex items-center justify-between gap-4">
+              {/* Brand Logo */}
+              <div 
+                onClick={() => { sound.playClick(); setActiveTab('engine'); }}
+                className="flex items-center gap-3 cursor-pointer group"
+              >
+                <div className="w-9 h-9 rounded-xl bg-[#00f3ff]/10 border border-[#00f3ff]/40 flex items-center justify-center text-[#00f3ff] group-hover:scale-110 transition-transform">
+                  <Icons.Layers className="w-5 h-5" />
+                </div>
+                <div>
+                  <div className="font-space font-black text-xl tracking-tight text-white flex items-center gap-1.5">
+                    NEX<span className="text-[#00f3ff]">GEN</span>
+                    <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-[#00f3ff]/20 text-[#00f3ff] font-bold">
+                      v2.4
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Navigation Tabs */}
+              <nav className="hidden md:flex items-center gap-1 bg-white/5 p-1 rounded-2xl border border-white/10">
+                {[
+                  { id: 'engine', label: '3D Neural Engine', icon: Icons.Cpu },
+                  { id: 'nodes', label: 'Edge Fleet', icon: Icons.Globe },
+                  { id: 'console', label: 'Virtual CLI', icon: Icons.Terminal },
+                  { id: 'pricing', label: 'Throughput', icon: Icons.Zap },
+                  { id: 'security', label: 'Security', icon: Icons.Shield }
+                ].map(tab => {
+                  const Icon = tab.icon;
+                  return (
+                    <button
+                      key={tab.id}
+                      onClick={() => { sound.playClick(); setActiveTab(tab.id); }}
+                      className={`flex items-center gap-2 px-4 py-2 rounded-xl font-space text-xs font-bold transition-all ${
+                        activeTab === tab.id
+                          ? 'bg-[#00f3ff] text-black shadow-[0_0_20px_rgba(0,243,255,0.4)]'
+                          : 'text-gray-400 hover:text-white hover:bg-white/5'
+                      }`}
+                    >
+                      <Icon className="w-3.5 h-3.5" />
+                      {tab.label}
+                    </button>
+                  );
+                })}
+              </nav>
+
+              {/* Action Buttons */}
+              <div className="flex items-center gap-3">
+                <button
+                  onClick={toggleSound}
+                  aria-label="Toggle Sound Effects"
+                  className="p-2.5 rounded-xl bg-white/5 hover:bg-white/10 text-gray-300 hover:text-[#00f3ff] border border-white/10 transition-colors"
+                >
+                  {muted ? <Icons.VolumeX className="w-4 h-4 text-rose-400" /> : <Icons.Volume2 className="w-4 h-4 text-emerald-400" />}
+                </button>
+
+                <button
+                  onClick={() => {
+                    sound.playSuccess();
+                    alert('Connecting to WebGPU Hardware Accelerators on localhost...');
+                  }}
+                  className="px-4 py-2 rounded-xl bg-gradient-to-r from-[#00f3ff] to-[#8b5cf6] text-black font-space font-bold text-xs uppercase tracking-wider hover:opacity-90 active:scale-95 transition-all shadow-[0_0_20px_rgba(0,243,255,0.25)]"
+                >
+                  Deploy Core
+                </button>
+              </div>
+            </div>
+
+            {/* Mobile Tab Scroller */}
+            <div className="flex md:hidden gap-1 mt-3 overflow-x-auto pb-1">
+              {[
+                { id: 'engine', label: '3D Engine' },
+                { id: 'nodes', label: 'Fleet' },
+                { id: 'console', label: 'Console' },
+                { id: 'pricing', label: 'Pricing' },
+                { id: 'security', label: 'Security' }
+              ].map(tab => (
+                <button
+                  key={tab.id}
+                  onClick={() => { sound.playClick(); setActiveTab(tab.id); }}
+                  className={`px-3 py-1.5 rounded-lg text-xs font-space font-bold whitespace-nowrap ${
+                    activeTab === tab.id ? 'bg-[#00f3ff] text-black' : 'text-gray-400 bg-white/5'
+                  }`}
+                >
+                  {tab.label}
+                </button>
+              ))}
+            </div>
+          </header>
+
+          {/* Main Content View Container */}
+          <main className="flex-1 max-w-7xl w-full mx-auto p-6 md:p-8 space-y-8">
+            {activeTab === 'engine' && <NeuralEngineView />}
+            {activeTab === 'nodes' && <EdgeFleetView />}
+            {activeTab === 'console' && <ConsoleView />}
+            {activeTab === 'pricing' && <PricingCalculatorView />}
+            {activeTab === 'security' && <SecurityShieldView />}
+          </main>
+
+          {/* Footer */}
+          <footer className="border-t border-white/10 bg-[#030307] py-6 px-6 text-center text-xs font-mono text-gray-500">
+            <div className="max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-4">
+              <span>NEXGEN SPATIAL COMPUTING ENGINE · DISTRIBUTED WEBGPU MESH</span>
+              <div className="flex items-center gap-4">
+                <span className="text-emerald-400">● 312 NODES HEALTHY</span>
+                <span>LATENCY: 0.32ms</span>
+                <span>QUANTUM ENCRYPTED</span>
+              </div>
+            </div>
+          </footer>
+
+          {/* Persistent Nex AI Assistant Floating Drawer */}
+          <NexAIAssistant />
+        </div>
+      );
+    }
+
+    // Mount Root Component
+    const root = createRoot(document.getElementById('root'));
+    root.render(<App />);
+  </script>
+</body>
+</html>

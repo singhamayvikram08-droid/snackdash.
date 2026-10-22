@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Kinetic Neural Interface</title>
+
+<!-- Tailwind & Fonts -->
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=Manrope:wght@300;400;500;600;700&display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
+
+<!-- Engine Scripts -->
+<script src="https://unpkg.com/ml5@latest/dist/ml5.min.js"></script>
+<link rel="stylesheet" href="/src/style.css">
+
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "primary-fixed": "#00f5f5", "primary-dim": "#00e6e6", "surface-container-lowest": "#000000",
+                        "inverse-on-surface": "#565457", "on-secondary": "#39004f", "surface-container-high": "#1f1f22",
+                        "on-primary-container": "#005d5d", "inverse-primary": "#006a6a", "surface-container-low": "#131316",
+                        "on-tertiary-fixed": "#380017", "surface-container": "#19191c", "tertiary-fixed": "#ff8eae",
+                        "error-dim": "#d7383b", "error": "#ff716c", "tertiary-fixed-dim": "#ff75a0",
+                        "on-primary-fixed-variant": "#006262", "tertiary": "#ff6b9b", "surface-bright": "#2c2c2f",
+                        "tertiary-container": "#ff067f", "secondary-fixed-dim": "#ebadff", "secondary-container": "#9900ce",
+                        "inverse-surface": "#fcf8fb", "tertiary-dim": "#e30071", "primary": "#c1fffe",
+                        "error-container": "#9f0519", "on-surface-variant": "#adaaad", "on-secondary-fixed-variant": "#8400b2",
+                        "on-primary-fixed": "#004343", "on-error-container": "#ffa8a3", "on-secondary-fixed": "#580078",
+                        "outline-variant": "#48474a", "on-background": "#fffbfe", "primary-container": "#00ffff",
+                        "surface-container-highest": "#262529", "on-secondary-container": "#fff5fc", "on-surface": "#fffbfe",
+                        "secondary": "#d873ff", "surface": "#0e0e10", "secondary-dim": "#bc00fb",
+                        "surface-tint": "#c1fffe", "secondary-fixed": "#f1c1ff", "surface-variant": "#262529",
+                        "on-tertiary": "#47001f", "primary-fixed-dim": "#00e6e6", "surface-dim": "#0e0e10",
+                        "on-primary": "#006767", "on-error": "#490006", "on-tertiary-container": "#000000",
+                        "on-tertiary-fixed-variant": "#760037", "background": "#0e0e10", "outline": "#767578"
+                    },
+                    "borderRadius": { "DEFAULT": "0px", "lg": "0px", "xl": "0px", "full": "9999px" },
+                    "fontFamily": { "headline": ["Space Grotesk"], "body": ["Manrope"], "label": ["Space Grotesk"] }
+                },
+            },
+        }
+    </script>
+<style>
+        body { background-color: #000000; overflow: hidden; font-family: 'Manrope', sans-serif; }
+        .glow-sm { text-shadow: 0 0 10px rgba(0, 255, 255, 0.5); }
+        .material-symbols-outlined { font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24; }
+        .particle-canvas { position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 0; }
+        .glass-panel { background: rgba(38, 37, 41, 0.4); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); }
+        .bloom-cyan { filter: drop-shadow(0 0 8px rgba(193, 255, 254, 0.3)); }
+        .scanline { width: 100%; height: 2px; background: rgba(0, 255, 255, 0.1); position: absolute; top: 0; left: 0; pointer-events: none; z-index: 10; }
+    </style>
+</head>
+<body class="bg-surface-container-lowest text-on-surface antialiased pointer-events-none">
+
+<!-- ENGINE LAYERS (Behind UI) -->
+<video id="webcam" class="webcam-bg" autoplay playsinline muted></video>
+<canvas id="gl-canvas"></canvas>
+<canvas id="drawing-canvas" class="hidden"></canvas>
+
+
+<!-- START SCREEN BLOCKER -->
+<div id="ui-container" class="absolute inset-0 z-[100] flex items-center justify-center bg-black/80 backdrop-blur-md pointer-events-auto">
+    <div id="start-screen" class="glass-panel p-12 text-center border border-primary/20 shadow-[0_0_50px_rgba(0,255,255,0.2)]">
+    <h1 class="text-4xl font-headline tracking-[0.2em] text-primary glow-sm mb-4 uppercase">KINETIC NEURAL INTERFACE</h1>
+    <p class="font-body text-on-surface-variant mb-8 uppercase text-xs tracking-widest">Connect Device Array</p>
+    <button id="start-btn" class="px-8 py-3 bg-gradient-to-r from-primary-fixed to-primary text-[#000] font-bold uppercase tracking-widest hover:scale-105 transition-transform pointer-events-auto border border-white">Initialize Link</button>
+    </div>
+    <div id="loading" class="hidden flex flex-col items-center justify-center gap-6">
+        <div class="spinner-container">
+            <div class="spinner">
+                <div class="spinner1"></div>
+            </div>
+        </div>
+        <div class="text-primary font-headline tracking-[0.2em] animate-pulse uppercase">Establishing Node...</div>
+    </div>
+</div>
+
+<div id="stitch-ui-layer" class="hidden absolute top-0 left-0 w-full h-full">
+
+<!-- Background Simulation Layer -->
+<div class="particle-canvas relative overflow-hidden pointer-events-none">
+<div class="absolute inset-0 opacity-40 mix-blend-screen overflow-hidden">
+<div class="absolute w-full h-full bg-[radial-gradient(circle_at_50%_50%,_rgba(0,255,255,0.15),transparent_60%)]"></div>
+<!-- Mock Particle Trails -->
+<div class="absolute top-1/4 left-1/4 w-96 h-96 bg-primary blur-[120px] rounded-full opacity-20"></div>
+<div class="absolute bottom-1/3 right-1/4 w-[500px] h-[500px] bg-secondary blur-[150px] rounded-full opacity-15"></div>
+<div class="absolute top-1/2 left-2/3 w-64 h-64 bg-tertiary blur-[100px] rounded-full opacity-10"></div>
+</div>
+</div>
+
+<!-- TopNavBar -->
+<header class="fixed top-0 left-0 w-full z-50 flex justify-between items-center px-6 py-4 bg-transparent font-['Space_Grotesk'] tracking-tighter pointer-events-none">
+<div class="flex items-center gap-3">
+<div class="w-6 h-6 bg-primary-container shadow-[0_0_15px_rgba(0,255,255,0.6)] flex items-center justify-center">
+<span class="material-symbols-outlined text-[14px] text-on-primary-container" style="font-variation-settings: 'FILL' 1;">bolt</span>
+</div>
+<h1 class="text-xl font-bold uppercase tracking-[0.2em] text-[#c1fffe] drop-shadow-[0_0_8px_rgba(0,255,255,0.4)]">KINETIC NEURAL INTERFACE</h1>
+</div>
+<div class="flex items-center gap-6 pointer-events-auto">
+<div class="flex gap-4">
+<button id="fullscreen-btn" class="text-[#c1fffe]/60 hover:text-white transition-colors duration-300 flex items-center gap-2 text-xs font-label">
+<span class="material-symbols-outlined text-[20px]" data-icon="fullscreen">fullscreen</span>
+</button>
+<button id="restart-btn" class="text-[#c1fffe]/60 hover:text-white transition-colors duration-300 flex items-center gap-2 text-xs font-label">
+<span class="material-symbols-outlined text-[20px]" data-icon="restart_alt">restart_alt</span>
+</button>
+<button id="settings-btn" class="text-[#c1fffe]/60 hover:text-white transition-colors duration-300 flex items-center gap-2 text-xs font-label">
+<span class="material-symbols-outlined text-[20px]" data-icon="settings">settings</span>
+</button>
+</div>
+</div>
+</header>
+<!-- SideNavBar (Converted to Toolbar) -->
+<nav id="toolbar" class="fixed left-0 top-1/2 -translate-y-1/2 z-[150] flex flex-col w-20 bg-black/40 backdrop-blur-xl h-auto self-center shadow-[12px_0_24px_rgba(0,255,255,0.1)] py-8 font-['Space_Grotesk'] uppercase text-xs tracking-widest pointer-events-auto">
+<div class="mb-10 px-2 flex flex-col items-center">
+<div class="text-[10px] font-black text-[#00ffff] mb-1">ENGINE</div>
+<div class="w-10 h-[1px] bg-gradient-to-r from-[#00ffff]/20 to-transparent"></div>
+</div>
+<div class="flex flex-col items-stretch gap-8">
+<button id="toggle-draw-btn" class="group flex flex-col items-center gap-1 text-white/40 hover:bg-white/5 hover:text-white py-2 transition-all duration-300">
+<span class="material-symbols-outlined text-xl" data-icon="grain">grain</span>
+<span id="draw-mode-label" class="scale-[0.7] origin-center font-label text-center whitespace-nowrap">DENSITY</span>
+</button>
+<button id="predict-btn" class="hidden group flex flex-col items-center gap-1 text-white/40 hover:bg-white/5 hover:text-white py-2 transition-all duration-300">
+<span class="material-symbols-outlined text-xl" data-icon="flare">flare</span>
+<span class="scale-[0.7] origin-center font-label text-center whitespace-nowrap">PREDICT</span>
+</button>
+<button id="clear-btn" class="hidden group flex flex-col items-center gap-1 text-white/40 hover:bg-white/5 hover:text-white py-2 transition-all duration-300">
+<span class="material-symbols-outlined text-xl" data-icon="speed">speed</span>
+<span class="scale-[0.7] origin-center font-label text-center whitespace-nowrap">CLEAR</span>
+</button>
+<a class="group flex flex-col items-center gap-1 text-white/40 hover:bg-white/5 hover:text-white py-2 transition-all duration-300" href="#">
+<span class="material-symbols-outlined text-xl" data-icon="palette">palette</span>
+<span class="scale-[0.7] origin-center font-label text-center whitespace-nowrap">Presets</span>
+</a>
+</div>
+</nav>
+
+<!-- Main Content Stage -->
+<main class="relative z-10 h-screen w-full flex flex-col items-center justify-center pointer-events-none">
+
+<!-- PREDICTION TEXT OVERLAY -->
+<div id="prediction-label" class="absolute top-[20%] left-1/2 -translate-x-1/2 z-20 font-headline font-bold text-center hidden">
+    <div class="text-[10px] uppercase tracking-[0.3em] text-primary/60 mb-1">Neural Prediction Array</div>
+    <div class="text-4xl text-primary glow-sm uppercase tracking-widest" id="prediction-text">...</div>
+</div>
+
+<!-- Gesture Status Indicators (Floating UI) -->
+<div class="absolute top-1/4 right-12 flex flex-col gap-4 items-end pointer-events-auto">
+<div class="glass-panel p-4 border-l-2 border-primary bloom-cyan w-48 transition-all hover:translate-x-[-8px]">
+<div class="flex items-center justify-between mb-2">
+<span class="font-headline text-[10px] uppercase tracking-widest text-on-surface-variant">Active Gesture</span>
+<span class="w-2 h-2 rounded-full bg-primary animate-pulse"></span>
+</div>
+<div id="gesture-text" class="font-headline text-lg font-bold text-primary tracking-tighter">TRACKING</div>
+<div class="mt-2 h-1 w-full bg-surface-container">
+<div class="h-full bg-primary w-2/3 shadow-[0_0_8px_rgba(0,255,255,0.8)]"></div>
+</div>
+</div>
+<div class="glass-panel p-4 border-l-2 border-secondary/40 w-48 opacity-60">
+<div class="flex items-center justify-between mb-2">
+<span class="font-headline text-[10px] uppercase tracking-widest text-on-surface-variant">Last Gesture</span>
+</div>
+<div class="font-headline text-lg font-bold text-secondary tracking-tighter">OPEN PALM</div>
+<div class="text-[9px] text-on-surface-variant/70 mt-1">HOLD FOR RESET</div>
+</div>
+</div>
+<!-- Webcam Monitor -->
+<div class="fixed top-24 left-24 w-48 aspect-video glass-panel overflow-hidden border border-outline-variant/20 pointer-events-auto">
+<div class="absolute top-0 left-0 w-full p-2 flex justify-between items-center z-20 bg-gradient-to-b from-black/80 to-transparent">
+<span class="text-[8px] font-headline text-primary-fixed tracking-[0.2em] font-bold">MONITOR_01</span>
+<span class="text-[8px] font-headline text-primary-fixed/60">HAND_TRACK_v4</span>
+</div>
+<div class="scanline"></div>
+<img class="w-full h-full object-cover grayscale contrast-125 opacity-70" data-alt="A dark, low-exposure webcam feed of a person's hands in a tech-focused room, with glowing cyan dots and lines highlighting finger joints" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDRPeUKwPgxHB5UUlDDLOBXTpWpI1T_BsZFHzasLWVI_dKPDVBRsYrbd9obIK2rynJR0Bt1l7rQPKV-LkURvFF0ej-Llan66nPSa0VdkQKOVW32akGqVAuP3A1BbNmBwlUPgN4FlhbL_cJxccDrgc1-kPFlQ6FaGXAKT0SrPDqyB2-IlKvUTUiisx_4H6brLMO7QuqHJ4y0rbZrtJpXS2krsZAy8UOySrko_dVadXIwtHDNgU5brRZZt9o9QnSjsDpob2p9qRCXHmw"/>
+<!-- Tracking HUD Overlay -->
+<div class="absolute inset-0 flex items-center justify-center border-2 border-primary/20 pointer-events-none">
+<div class="w-full h-0.5 bg-primary/10 absolute"></div>
+<div class="h-full w-0.5 bg-primary/10 absolute"></div>
+</div>
+</div>
+<!-- Technical HUD Data -->
+<div class="absolute bottom-32 left-1/2 -translate-x-1/2 flex gap-12 pointer-events-none">
+<div class="flex flex-col items-center">
+<div class="text-[10px] text-on-surface-variant font-headline tracking-[0.3em] mb-1">FPS</div>
+<div class="text-4xl font-headline font-light tracking-tighter text-primary" id="fps-counter">60<span class="text-xs ml-1 opacity-50">HZ</span></div>
+</div>
+<div class="flex flex-col items-center">
+<div class="text-[10px] text-on-surface-variant font-headline tracking-[0.3em] mb-1">PARTICLES</div>
+<div class="text-4xl font-headline font-light tracking-tighter text-secondary" id="particle-counter">48.2<span class="text-xs ml-1 opacity-50">K</span></div>
+</div>
+<div class="flex flex-col items-center">
+<div class="text-[10px] text-on-surface-variant font-headline tracking-[0.3em] mb-1">THERMAL</div>
+<div class="text-4xl font-headline font-light tracking-tighter text-tertiary">38<span class="text-xs ml-1 opacity-50">°C</span></div>
+</div>
+</div>
+</main>
+<!-- Footer -->
+<footer class="fixed bottom-0 left-0 w-full z-50 flex justify-between items-end px-6 py-4 pointer-events-none bg-transparent font-['Space_Grotesk'] text-[10px] uppercase tracking-widest text-[#ff6b9b]">
+<div class="flex items-center gap-8 pointer-events-auto">
+<div class="flex items-center gap-2">
+<span class="w-1.5 h-1.5 bg-[#ff6b9b] rounded-full animate-pulse"></span>
+<span id="footer-fps">FPS: 60</span>
+</div>
+<div class="flex items-center gap-2">
+<span class="w-1.5 h-1.5 bg-[#ff6b9b] rounded-full"></span>
+<span>WEBCAM: ACTIVE</span>
+</div>
+<div class="flex items-center gap-2">
+<span class="w-1.5 h-1.5 bg-[#ff6b9b] rounded-full animate-ping"></span>
+<span>GESTURE: READY</span>
+</div>
+</div>
+<div class="flex gap-6 pointer-events-auto">
+<a class="hover:text-[#ff6b9b] transition-colors duration-300" href="#">HELP</a>
+<a class="hover:text-[#ff6b9b] transition-colors duration-300" href="#">LEGAL</a>
+</div>
+</footer>
+<!-- Decorative Corner Accents -->
+<div class="fixed top-0 left-0 w-8 h-8 border-t border-l border-primary/40 pointer-events-none z-50"></div>
+<div class="fixed top-0 right-0 w-8 h-8 border-t border-r border-primary/40 pointer-events-none z-50"></div>
+<div class="fixed bottom-0 left-0 w-8 h-8 border-b border-l border-tertiary/40 pointer-events-none z-50"></div>
+<div class="fixed bottom-0 right-0 w-8 h-8 border-b border-r border-tertiary/40 pointer-events-none z-50"></div>
+
+</div>
+
+<script type="module" src="/src/main.ts"></script>
+</body></html>
