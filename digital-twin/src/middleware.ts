@@ -5,8 +5,13 @@ export function middleware(request: NextRequest) {
   const { headers, nextUrl } = request;
   const proto = headers.get('x-forwarded-proto');
 
-  // Enforce HTTPS redirection in production when arriving via HTTP
-  if (process.env.NODE_ENV === 'production' && proto === 'http') {
+  // Enforce HTTPS redirection in production when arriving via HTTP (bypassed on localhost)
+  if (
+    process.env.NODE_ENV === 'production' &&
+    proto === 'http' &&
+    nextUrl.hostname !== 'localhost' &&
+    nextUrl.hostname !== '127.0.0.1'
+  ) {
     const httpsUrl = nextUrl.clone();
     httpsUrl.protocol = 'https:';
     return NextResponse.redirect(httpsUrl, {
