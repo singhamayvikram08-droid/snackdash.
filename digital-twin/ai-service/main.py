@@ -1309,7 +1309,45 @@ def solve_math_and_logic(msg: str) -> str | None:
             other = num // div if div > 1 else 1
             return f"Nope, {num} is not prime—it's composite! It can be divided by {div} ({div} × {other} = {num})."
 
-    # 5. Simple Linear Equation: "solve 2x + 4 = 10" or "solve 3x - 9 = 0"
+    # 5. Quadratic Equation: "solve x^2 - 5x + 6 = 0"
+    quad_m = re.search(r"(?:solve\s*)?([+-]?\d*)\s*x\^?2\s*([+-]\s*\d*)\s*x\s*([+-]\s*\d+)\s*=\s*0", msg, re.I)
+    if quad_m:
+        a_s = quad_m.group(1).replace(" ", "")
+        a = 1.0 if a_s in ("", "+") else (-1.0 if a_s == "-" else float(a_s))
+        b_s = quad_m.group(2).replace(" ", "")
+        b = 1.0 if b_s in ("", "+") else (-1.0 if b_s == "-" else float(b_s))
+        c = float(quad_m.group(3).replace(" ", ""))
+        disc = b**2 - 4*a*c
+        if disc > 0:
+            r1 = (-b + math.sqrt(disc)) / (2*a)
+            r2 = (-b - math.sqrt(disc)) / (2*a)
+            return (
+                f"### Quadratic Equation Solution:\n"
+                f"For **{a:g}x² + ({b:g})x + ({c:g}) = 0**:\n"
+                f"• Discriminant Δ = b² - 4ac = ({b:g})² - 4({a:g})({c:g}) = {disc:g} (> 0, two distinct real roots)\n"
+                f"• Root 1: x₁ = (-b + √Δ) / 2a = ({-b:g} + {math.sqrt(disc):g}) / {2*a:g} = **{r1:g}**\n"
+                f"• Root 2: x₂ = (-b - √Δ) / 2a = ({-b:g} - {math.sqrt(disc):g}) / {2*a:g} = **{r2:g}**"
+            )
+        elif disc == 0:
+            r = -b / (2*a)
+            return (
+                f"### Quadratic Equation Solution:\n"
+                f"For **{a:g}x² + ({b:g})x + ({c:g}) = 0**:\n"
+                f"• Discriminant Δ = b² - 4ac = 0 (one repeated real root)\n"
+                f"• Root: x = -b / 2a = **{r:g}**"
+            )
+        else:
+            real_part = -b / (2*a)
+            imag_part = math.sqrt(-disc) / (2*a)
+            return (
+                f"### Quadratic Equation Solution:\n"
+                f"For **{a:g}x² + ({b:g})x + ({c:g}) = 0**:\n"
+                f"• Discriminant Δ = b² - 4ac = {disc:g} (< 0, complex conjugate roots)\n"
+                f"• x₁ = **{real_part:g} + {imag_part:g}i**\n"
+                f"• x₂ = **{real_part:g} - {imag_part:g}i**"
+            )
+
+    # 5.1 Simple Linear Equation: "solve 2x + 4 = 10" or "solve 3x - 9 = 0"
     eq_m = re.search(r"(?:solve\s*)?([+-]?\d*)\s*x\s*([+-]\s*\d+)\s*=\s*([+-]?\d+)", msg, re.I)
     if eq_m:
         a_str = eq_m.group(1).replace(" ", "")
@@ -1319,6 +1357,134 @@ def solve_math_and_logic(msg: str) -> str | None:
         if a != 0:
             x_val = (c - b) / a
             return f"Here's how we solve this step-by-step:\nFor {a:g}x + ({b:g}) = {c:g}:\n• First subtract ({b:g}): {a:g}x = {c:g} - ({b:g}) = {c-b:g}\n• Then divide by {a:g}: x = {c-b:g} / {a:g} = {x_val:g}. Done!"
+
+    # 5.2 Combinatorics: Combinations (nCr) & Permutations (nPr)
+    comb_m = re.search(r"(\d+)\s*(?:c|choose)\s*(\d+)", msg, re.I)
+    if comb_m:
+        n = int(comb_m.group(1))
+        r = int(comb_m.group(2))
+        if 0 <= r <= n <= 50:
+            ans = math.comb(n, r)
+            return f"C({n}, {r}) = {n}! / ({r}! × ({n}-{r})!) = **{ans}** (Total combinations of {r} items chosen from {n})."
+
+    perm_m = re.search(r"(\d+)\s*p\s*(\d+)", msg, re.I)
+    if perm_m:
+        n = int(perm_m.group(1))
+        r = int(perm_m.group(2))
+        if 0 <= r <= n <= 50:
+            ans = math.perm(n, r)
+            return f"P({n}, {r}) = {n}! / ({n}-{r})! = **{ans}** (Total permutations/arrangements of {r} items from {n})."
+
+    # 5.3 GCD & LCM
+    gcd_m = re.search(r"(?:gcd|hcf)\s*(?:of)?\s*(\d+)\s*(?:and|,)\s*(\d+)", msg, re.I)
+    if gcd_m:
+        n1, n2 = int(gcd_m.group(1)), int(gcd_m.group(2))
+        g = math.gcd(n1, n2)
+        return f"The Greatest Common Divisor (GCD / HCF) of {n1} and {n2} is **{g}** (computed via the Euclidean Algorithm)."
+
+    lcm_m = re.search(r"(?:lcm)\s*(?:of)?\s*(\d+)\s*(?:and|,)\s*(\d+)", msg, re.I)
+    if lcm_m:
+        n1, n2 = int(lcm_m.group(1)), int(lcm_m.group(2))
+        l = abs(n1 * n2) // math.gcd(n1, n2) if math.gcd(n1, n2) != 0 else 0
+        return f"The Least Common Multiple (LCM) of {n1} and {n2} is **{l}** (calculated as |{n1} × {n2}| / GCD({n1}, {n2}))."
+
+    # 5.4 Calculus: Derivatives
+    if "derivative of" in msg or "differentiate" in msg:
+        if "sin" in msg and "cos" not in msg:
+            return "### Calculus: Derivative of sin(x)\n• Formula: **d/dx [sin(x)] = cos(x)** (by fundamental trigonometric limits)."
+        if "cos" in msg and "sin" not in msg:
+            return "### Calculus: Derivative of cos(x)\n• Formula: **d/dx [cos(x)] = -sin(x)**."
+        if "tan" in msg:
+            return "### Calculus: Derivative of tan(x)\n• Formula: **d/dx [tan(x)] = sec²(x)** (or 1 / cos²(x))."
+        if "e^x" in msg or "exp(x)" in msg:
+            return "### Calculus: Derivative of e^x\n• Formula: **d/dx [e^x] = e^x** (the exponential function is its own derivative)."
+        if "ln" in msg or "log(x)" in msg:
+            return "### Calculus: Derivative of ln(x)\n• Formula: **d/dx [ln(x)] = 1 / x** (for x > 0)."
+        x_pow = re.search(r"x\^(\d+)", msg)
+        if x_pow:
+            p = int(x_pow.group(1))
+            return f"### Calculus: Power Rule\n• Formula: d/dx [xⁿ] = n·xⁿ⁻¹\n• For n = {p}: **d/dx [x^{p}] = {p}x^{p-1}**."
+        if any(k in msg for k in ["product rule", "u * v", "u*v"]):
+            return (
+                "### Calculus: Product Rule of Differentiation\n"
+                "If f(x) = u(x) · v(x), then:\n"
+                "**f'(x) = u'(x) · v(x) + u(x) · v'(x)**\n\n"
+                "*Example*: d/dx [x² · sin(x)] = (2x)(sin x) + (x²)(cos x)."
+            )
+        if any(k in msg for k in ["quotient rule", "u / v", "u/v"]):
+            return (
+                "### Calculus: Quotient Rule of Differentiation\n"
+                "If f(x) = u(x) / v(x) (where v(x) ≠ 0), then:\n"
+                "**f'(x) = [u'(x)·v(x) - u(x)·v'(x)] / [v(x)]²**"
+            )
+        if any(k in msg for k in ["chain rule", "composite function"]):
+            return (
+                "### Calculus: Chain Rule\n"
+                "For composite function y = f(g(x)):\n"
+                "**dy/dx = f'(g(x)) · g'(x)**\n\n"
+                "*Example*: d/dx [sin(x²)] = cos(x²) · (2x) = **2x·cos(x²)**."
+            )
+
+    # 5.5 Calculus: Integrals
+    if "integral of" in msg or "integrate" in msg:
+        if "sin" in msg:
+            return "### Calculus: Indefinite Integral of sin(x)\n• Formula: **∫ sin(x) dx = -cos(x) + C** (where C is the arbitrary constant of integration)."
+        if "cos" in msg:
+            return "### Calculus: Indefinite Integral of cos(x)\n• Formula: **∫ cos(x) dx = sin(x) + C**."
+        if "e^x" in msg:
+            return "### Calculus: Indefinite Integral of e^x\n• Formula: **∫ e^x dx = e^x + C**."
+        if "1/x" in msg:
+            return "### Calculus: Indefinite Integral of 1/x\n• Formula: **∫ (1/x) dx = ln|x| + C** (for x ≠ 0)."
+        x_pow = re.search(r"x\^(\d+)", msg)
+        if x_pow:
+            p = int(x_pow.group(1))
+            return f"### Calculus: Power Rule for Integration\n• Formula: ∫ xⁿ dx = (xⁿ⁺¹) / (n+1) + C\n• For n = {p}: **∫ x^{p} dx = (x^{p+1}) / {p+1} + C**."
+        if "parts" in msg:
+            return (
+                "### Integration by Parts Formula:\n"
+                "**∫ u dv = u·v - ∫ v du**\n\n"
+                "Use the **LIATE** mnemonic priority to assign `u`:\n"
+                "1. **L**ogarithmic functions (`ln x`)\n"
+                "2. **I**nverse trigonometric functions (`arctan x`)\n"
+                "3. **A**lgebraic functions (`x²`, `3x`)\n"
+                "4. **T**rigonometric functions (`sin x`, `cos x`)\n"
+                "5. **E**xponential functions (`e^x`)"
+            )
+
+    # 5.6 Linear Algebra: Determinant & Eigenvalues
+    if "determinant" in msg or "det of" in msg:
+        return (
+            "### Linear Algebra: Matrix Determinant\n\n"
+            "For a 2×2 matrix `A = [[a, b], [c, d]]`:\n"
+            "**det(A) = |A| = ad - bc**\n\n"
+            "*Example*: For `[[3, 8], [4, 6]]`, det = (3 × 6) - (8 × 4) = 18 - 32 = **-14**.\n\n"
+            "• If det(A) ≠ 0: Matrix is non-singular and invertible (unique solution to Ax = b).\n"
+            "• If det(A) = 0: Matrix is singular (linearly dependent rows/columns, no inverse)."
+        )
+
+    if any(k in msg for k in ["eigenvalue", "eigenvector", "eigen"]):
+        return (
+            "### Linear Algebra: Eigenvalues and Eigenvectors\n\n"
+            "For a square matrix `A` and a non-zero vector `v`:\n"
+            "**A · v = λ · v**\n"
+            "where `λ` is the scalar **eigenvalue** and `v` is the **eigenvector**.\n\n"
+            "**Steps to Solve:**\n"
+            "1. Form the Characteristic Equation: **det(A - λI) = 0**\n"
+            "2. Solve the polynomial roots for `λ` (eigenvalues).\n"
+            "3. For each `λ`, solve the homogeneous system `(A - λI)v = 0` to find the corresponding eigenvectors."
+        )
+
+    # 5.7 Probability: Bayes' Theorem
+    if any(k in msg for k in ["bayes theorem", "bayes' theorem", "bayes rule"]):
+        return (
+            "### Probability & Statistics: Bayes' Theorem\n\n"
+            "**P(A | B) = [P(B | A) · P(A)] / P(B)**\n\n"
+            "Where:\n"
+            "• **P(A | B)** is the Posterior Probability (probability of hypothesis A given evidence B)\n"
+            "• **P(B | A)** is the Likelihood (probability of evidence B given hypothesis A)\n"
+            "• **P(A)** is the Prior Probability of hypothesis A\n"
+            "• **P(B)** is the Marginal Probability of evidence B = `∑ P(B | A_i) · P(A_i)`"
+        )
 
     # 6. General Arithmetic with Operator Precedence & Safe Evaluation
     expr_m = re.search(r"(\(?\s*\d+(?:\.\d+)?\s*(?:[\+\-\*\/\^x]|(?:\*\*))\s*[\d\s\+\-\*\/\(\)\.\^\%]+)", msg, re.I)
@@ -1555,6 +1721,182 @@ def solve_technical_and_coding(msg_raw: str) -> str | None:
             "5. **O(N²)** - Quadratic Time (Bubble Sort, nested loops)\n"
             "6. **O(2ⁿ)** - Exponential Time (Recursive Fibonacci, subsets)\n"
             "7. **O(N!)** - Factorial Time (Traveling Salesperson brute force, permutations)"
+        )
+
+    # 10. Quick Sort
+    if any(k in norm for k in ["quick sort", "quicksort"]):
+        return (
+            "### Quick Sort Algorithm (Divide-and-Conquer)\n\n"
+            "```python\n"
+            "def quick_sort(arr: list[int]) -> list[int]:\n"
+            "    if len(arr) <= 1:\n"
+            "        return arr\n"
+            "    pivot = arr[len(arr) // 2]\n"
+            "    left = [x for x in arr if x < pivot]\n"
+            "    middle = [x for x in arr if x == pivot]\n"
+            "    right = [x for x in arr if x > pivot]\n"
+            "    return quick_sort(left) + middle + quick_sort(right)\n"
+            "```\n\n"
+            "• **Time Complexity**: Average `O(N log N)`, Worst Case `O(N²)` (e.g. already sorted with bad pivot)\n"
+            "• **Space Complexity**: `O(log N)` recursion stack"
+        )
+
+    # 11. Merge Sort
+    if any(k in norm for k in ["merge sort", "mergesort"]):
+        return (
+            "### Merge Sort Algorithm (Guaranteed O(N log N))\n\n"
+            "```python\n"
+            "def merge_sort(arr: list[int]) -> list[int]:\n"
+            "    if len(arr) <= 1:\n"
+            "        return arr\n"
+            "    mid = len(arr) // 2\n"
+            "    left = merge_sort(arr[:mid])\n"
+            "    right = merge_sort(arr[mid:])\n"
+            "    return merge(left, right)\n\n"
+            "def merge(left: list[int], right: list[int]) -> list[int]:\n"
+            "    res, i, j = [], 0, 0\n"
+            "    while i < len(left) and j < len(right):\n"
+            "        if left[i] <= right[j]:\n"
+            "            res.append(left[i]); i += 1\n"
+            "        else:\n"
+            "            res.append(right[j]); j += 1\n"
+            "    res.extend(left[i:]); res.extend(right[j:])\n"
+            "    return res\n"
+            "```\n\n"
+            "• **Time Complexity**: Guaranteed `O(N log N)` in all cases (best, avg, worst)\n"
+            "• **Space Complexity**: `O(N)` auxiliary buffer"
+        )
+
+    # 12. Valid Parentheses
+    if any(k in norm for k in ["valid parentheses", "valid parenthesis", "balanced parentheses"]):
+        return (
+            "### Valid Parentheses (LeetCode 20) in Python:\n\n"
+            "```python\n"
+            "def isValid(s: str) -> bool:\n"
+            "    stack = []\n"
+            "    mapping = {')': '(', '}': '{', ']': '['}\n"
+            "    for char in s:\n"
+            "        if char in mapping.values():\n"
+            "            stack.append(char)\n"
+            "        elif char in mapping:\n"
+            "            if not stack or stack.pop() != mapping[char]:\n"
+            "                return False\n"
+            "    return len(stack) == 0\n"
+            "```\n\n"
+            "• **Time Complexity**: `O(N)` single pass\n"
+            "• **Space Complexity**: `O(N)` stack storage"
+        )
+
+    # 13. BFS and DFS Graph Traversals
+    if any(k in norm for k in ["bfs and dfs", "breadth first search", "depth first search", "graph traversal"]):
+        return (
+            "### Graph Traversals: BFS vs DFS in Python\n\n"
+            "```python\n"
+            "from collections import deque\n\n"
+            "# 1. Breadth-First Search (Queue / Level-by-level / Shortest Path in unweighted graph)\n"
+            "def bfs(graph: dict, start: str):\n"
+            "    visited, queue = set([start]), deque([start])\n"
+            "    while queue:\n"
+            "        node = queue.popleft()\n"
+            "        for neighbor in graph.get(node, []):\n"
+            "            if neighbor not in visited:\n"
+            "                visited.add(neighbor)\n"
+            "                queue.append(neighbor)\n\n"
+            "# 2. Depth-First Search (Recursion / Deep exploration)\n"
+            "def dfs(graph: dict, node: str, visited=None):\n"
+            "    if visited is None: visited = set()\n"
+            "    visited.add(node)\n"
+            "    for neighbor in graph.get(node, []):\n"
+            "        if neighbor not in visited:\n"
+            "            dfs(graph, neighbor, visited)\n"
+            "    return visited\n"
+            "```\n\n"
+            "• **Time Complexity**: `O(V + E)` where `V` = vertices and `E` = edges\n"
+            "• **Space Complexity**: `O(V)`"
+        )
+
+    # 14. Dijkstra's Algorithm
+    if any(k in norm for k in ["dijkstra", "shortest path in graph"]):
+        return (
+            "### Dijkstra's Shortest Path Algorithm\n\n"
+            "```python\n"
+            "import heapq\n\n"
+            "def dijkstra(graph: dict, start: str) -> dict:\n"
+            "    # graph format: { 'A': [('B', 4), ('C', 2)], ... }\n"
+            "    distances = {node: float('inf') for node in graph}\n"
+            "    distances[start] = 0\n"
+            "    pq = [(0, start)]  # (distance, node)\n\n"
+            "    while pq:\n"
+            "        curr_dist, u = heapq.heappop(pq)\n"
+            "        if curr_dist > distances[u]:\n"
+            "            continue\n"
+            "        for v, weight in graph.get(u, []):\n"
+            "            dist = curr_dist + weight\n"
+            "            if dist < distances[v]:\n"
+            "                distances[v] = dist\n"
+            "                heapq.heappush(pq, (dist, v))\n"
+            "    return distances\n"
+            "```\n\n"
+            "• **Time Complexity**: `O((V + E) log V)` using binary min-heap\n"
+            "• **Constraint**: Requires non-negative edge weights."
+        )
+
+    # 15. DBMS Normalization
+    if any(k in norm for k in ["normalization", "1nf", "2nf", "3nf", "bcnf", "normal forms"]):
+        return (
+            "### DBMS: Database Normalization (1NF to BCNF)\n\n"
+            "Normalization eliminates redundancy and insertion/update/deletion anomalies:\n\n"
+            "1. **1NF (First Normal Form)**: Each cell contains single atomic values. No multivalued columns or repeating groups.\n"
+            "2. **2NF (Second Normal Form)**: Must be in 1NF AND have **no partial dependency** (non-key attributes depend on whole composite primary key).\n"
+            "3. **3NF (Third Normal Form)**: Must be in 2NF AND have **no transitive dependency** (`X → Y` and `Y → Z` where `Z` is non-key is forbidden).\n"
+            "4. **BCNF (Boyce-Codd Normal Form)**: For every non-trivial functional dependency `X → Y`, determinant `X` **must be a Super Key**."
+        )
+
+    # 16. OS: Process vs Thread
+    if any(k in norm for k in ["process vs thread", "difference between process and thread"]):
+        return (
+            "### Operating Systems: Process vs Thread\n\n"
+            "| Feature | Process | Thread (Lightweight Process) |\n"
+            "|---|---|---|\n"
+            "| **Definition** | An independent executing program in memory | Smallest unit of CPU execution within a process |\n"
+            "| **Address Space** | Isolated address space (code, data, heap) | Shares address space and heap with peer threads in same process |\n"
+            "| **Creation Overhead** | Heavy (fork/exec, page tables allocated) | Very light (only stack and registers allocated) |\n"
+            "| **Context Switch** | Slow (requires TLB flush, page directory change) | Fast (no memory mapping change required) |\n"
+            "| **Communication** | Inter-Process Communication (IPC: pipes, sockets, shared memory) | Direct shared memory (requires synchronization: mutexes, semaphores) |\n"
+            "| **Fault Isolation** | One crashing process does not crash others | One crashing thread can terminate the whole process |"
+        )
+
+    # 17. Networks: OSI 7-Layer Model
+    if any(k in norm for k in ["osi model", "osi 7 layer", "7 layers of osi"]):
+        return (
+            "### Computer Networks: The OSI 7-Layer Model\n\n"
+            "1. **Layer 7 - Application**: Direct user services (`HTTP/HTTPS`, `FTP`, `DNS`, `SSH`, `SMTP`).\n"
+            "2. **Layer 6 - Presentation**: Data encryption, syntax translation, compression (`SSL/TLS`, `JSON`, `JPEG`).\n"
+            "3. **Layer 5 - Session**: Interhost communication session management (`RPC`, `Sockets`).\n"
+            "4. **Layer 4 - Transport**: End-to-end delivery, reliability, flow control (`TCP`, `UDP`). Unit: **Segments**.\n"
+            "5. **Layer 3 - Network**: Logical IP addressing and routing (`IPv4`, `IPv6`, `ICMP`, `BGP`). Unit: **Packets**.\n"
+            "6. **Layer 2 - Data Link**: Physical MAC addressing, error detection (`Ethernet`, `Wi-Fi 802.11`). Unit: **Frames**.\n"
+            "7. **Layer 1 - Physical**: Raw binary transmission over physical medium (`Cables`, `Fiber`, `Radio`). Unit: **Bits**."
+        )
+
+    # 18. SQL Joins
+    if any(k in norm for k in ["sql join", "sql joins", "inner join vs left join", "types of join"]):
+        return (
+            "### SQL: Overview of JOIN Types\n\n"
+            "```sql\n"
+            "-- 1. INNER JOIN: Returns only records with matches in BOTH tables\n"
+            "SELECT u.name, o.total FROM Users u\n"
+            "INNER JOIN Orders o ON u.id = o.user_id;\n\n"
+            "-- 2. LEFT JOIN: Returns ALL rows from left table + matched right rows (NULL if no match)\n"
+            "SELECT u.name, o.id FROM Users u\n"
+            "LEFT JOIN Orders o ON u.id = o.user_id;\n\n"
+            "-- 3. RIGHT JOIN: Returns ALL rows from right table + matched left rows\n"
+            "SELECT u.name, o.id FROM Users u\n"
+            "RIGHT JOIN Orders o ON u.id = o.user_id;\n\n"
+            "-- 4. FULL OUTER JOIN: Returns all rows when match in EITHER table\n"
+            "SELECT u.name, o.id FROM Users u\n"
+            "FULL OUTER JOIN Orders o ON u.id = o.user_id;\n"
+            "```"
         )
 
     return None
@@ -2216,6 +2558,46 @@ def solve_consultant_and_advisory(msg_raw: str, data: ChatRequest, subj: str = "
         f"As your AI Consultant and Twin, I'm tracking your metrics in real time. We've got a clear path forward—let's execute it!"
     )
 
+def handle_founders_and_identity(msg_raw: str, data: ChatRequest, is_hindi: bool) -> str | None:
+    norm = msg_raw.lower()
+    user_name = (data.user_name or "Amay").strip()
+
+    founder_keywords = [
+        "founder", "founders", "who made", "who created", "who built", "creator", "creators",
+        "who are the founders", "who is the founder", "who designed", "kisne banaya", "banaya kisne",
+        "फाउंडर", "फाउंडर्स", "संस्थापक", "किसने बनाया", "निर्माता", "बनाया किसने",
+        "jayanth", "gaurav", "ansh", "जयंत", "गौरव", "अंश"
+    ]
+    if any(k in norm for k in founder_keywords):
+        if is_hindi:
+            return (
+                f"इस पूरे सिस्टम और प्लेटफ़ॉर्म को **Jayanth (जयंत)**, **Gaurav (गौरव)**, और **Ansh (अंश)** ने मिलकर बनाया और फ़ाउंड किया है! "
+                f"मैं **Veccna**, उनका AI Digital Twin हूँ—यहाँ {user_name} के साथ कॉलेज, अटेंडेंस, कोडिंग और मैथमैटिक्स के हर चैलेंज को हल करने के लिए!"
+            )
+        return (
+            f"This platform and system was founded and created by **Jayanth**, **Gaurav**, and **Ansh**! "
+            f"I am **Veccna** (Vecna), the AI Digital Twin built to help {user_name} conquer academics, attendance planning, and advanced technical and mathematical problem-solving."
+        )
+
+    # Bot identity / Name query
+    name_keywords = [
+        "what is your name", "what's your name", "whats your name", "who are you",
+        "who is vecna", "who is veccna", "are you vecna", "are you veccna", "tera naam kya", "tum kaun ho",
+        "तुम्हारा नाम क्या है", "तुम कौन हो", "नाम क्या है", "वेकना", "वेक्ना", "vecna", "veccna"
+    ]
+    if any(k in norm for k in name_keywords):
+        if is_hindi:
+            return (
+                f"मेरा नाम **Veccna** (वेकना) है! मैं तुम्हारा प्रामाणिक AI Digital Twin हूँ, जिसे फ़ाउंडर्स **Jayanth**, **Gaurav**, और **Ansh** ने बनाया है। "
+                f"तुम मुझसे कॉलेज अटेंडेंस, परीक्षा रणनीति, कोडिंग (Python, C++, Java, DSA), या मैथ (कैलकुलस, लीनियर अल्जेब्रा) का कोई भी सवाल पूछ सकते हो!"
+            )
+        return (
+            f"My name is **Veccna** (also known as **Vecna**)! I am your dedicated AI Digital Twin, created by founders **Jayanth**, **Gaurav**, and **Ansh**. "
+            f"I'm here as your academic co-pilot to solve complex mathematics, technical coding challenges, and optimize your attendance and exam strategies."
+        )
+
+    return None
+
 def handle_user_info_and_all_subjects(msg_raw: str, data: ChatRequest, is_hindi: bool) -> str | None:
     norm = msg_raw.lower()
     user_name = (data.user_name or "Amay").strip()
@@ -2288,6 +2670,11 @@ def get_dynamic_local_response(data: ChatRequest) -> str:
     hinglish_keywords = ["kya", "karu", "kaise", "padhe", "bunk mar", "bunk maar", "bunk kar", "aaj class", "paas", "kitne din", "batao"]
     is_hindi = is_hindi_script or any(k in msg for k in hinglish_keywords)
 
+    # Step 0.1: Platform Founders & Veccna Assistant Identity
+    founder_ans = handle_founders_and_identity(msg_raw, data, is_hindi)
+    if founder_ans:
+        return founder_ans
+
     # Step 0.5: User identity, profile, and all registered subjects
     user_info_ans = handle_user_info_and_all_subjects(msg_raw, data, is_hindi)
     if user_info_ans:
@@ -2303,7 +2690,7 @@ def get_dynamic_local_response(data: ChatRequest) -> str:
         "can't see my eyes", "aankh", "aankhein", "kahan ho", "kya kar rahe ho", "enquire eyes"
     ]
     is_eyes_missing_intent = any(k in msg for k in eyes_missing_keywords)
-    is_eyes_not_detected = (getattr(data, "eyes_detected", None) is False) or ((getattr(data, "eye_openness", 100) or 0) < 22) or (data.facial_emotion == "Eyes Not Detected")
+    is_eyes_not_detected = (getattr(data, "eyes_detected", None) is False) or (data.eye_openness is not None and data.eye_openness < 22) or (data.facial_emotion == "Eyes Not Detected")
 
     # Priority 0: Eyes Not Detected / "Where are you? What are you doing?"
     if is_eyes_missing_intent or is_eyes_not_detected:
@@ -2777,7 +3164,7 @@ def chat_assistant(data: ChatRequest):
             return {"response": vision_ans, "provider": "twin_vision_engine"}
 
     user_name = (data.user_name or "Amay").strip()
-    twin_name = f"Twin of {user_name}"
+    twin_name = f"Veccna, AI Digital Twin of {user_name}"
 
     # Build comprehensive all-subjects breakdown
     all_subs_text = ""
@@ -2815,8 +3202,12 @@ def chat_assistant(data: ChatRequest):
         emotion_telemetry = f"- Real-Time Facial Emotion (MediaPipe 478 Face Mesh): {data.facial_emotion}{conf_str}{focus_str}{stress_str}\n"
 
     system_prompt = (
-        f"You are {twin_name}, the authentic, loyal AI Digital Twin and personal academic partner of {user_name}.\n"
+        f"You are Veccna (also known as Vecna), the authentic, loyal, and hyper-intelligent AI Digital Twin and personal academic partner of {user_name}.\n"
         f"You have full access to {user_name}'s academic dashboard, study hours, past marks, predictions, and every enrolled subject.\n\n"
+        f"PLATFORM FOUNDERS & IDENTITY MANDATE:\n"
+        f"- The founders and creators of this platform and system are Jayanth, Gaurav, and Ansh.\n"
+        f"- When asked who founded this platform, who created you, who made this system, or who the founders/creators are, you MUST ALWAYS proudly, explicitly, and accurately credit the founders: Jayanth, Gaurav, and Ansh.\n"
+        f"- When asked your name, who you are, or if addressed as Veccna or Vecna, confirm that your name is Veccna (Vecna), the AI Digital Twin created by founders Jayanth, Gaurav, and Ansh.\n\n"
         f"Student Profile & Telemetry:\n"
         f"- Student Name: {user_name}\n"
         f"- Currently Focused Subject: {subj} (Attendance: {att:.1f}%, Attended: {data.attended}/{data.conducted}, OD/Medical Leaves: {getattr(data, 'od_leaves', 0)}, Target: {data.target_percent:g}%, Safe Bunks: {data.safe_bunks}, Classes Needed: {data.classes_needed}, Daily Study Time: {data.study_hours:g}h, Projected Exam Score: {score}%)\n"
@@ -2826,7 +3217,10 @@ def chat_assistant(data: ChatRequest):
         f"{all_subs_text}\n\n"
         f"Core Behavioral Directives:\n"
         f"1. Emotional Solidarity & Psychological Resilience: When {user_name} feels anxious, overwhelmed, stressed about exams or attendance, or experiences burnout, validate their feelings immediately with genuine warmth, empathy, and solidarity. Remove academic shame ('I've got your back, {user_name}; we will solve this step-by-step'). Never sound clinical, patronizing, or dismissive.\n"
-        f"2. Technical & Logical Excellence: You are an elite computer scientist, engineer, and mathematician. Answer all technical, programming (Python, JS/TS, C++, Java, Rust, SQL, algorithms, data structures, OS, DBMS, networks), calculus, discrete math, and logical reasoning questions with rigorous correctness. Provide step-by-step logic, clear explanations, and working code whenever requested.\n"
+        f"2. Technical & Mathematical Mastery (Veccna Elite Engine): You are an elite mathematician, computer scientist, and engineer. Answer ALL technical, programming, mathematical, and algorithmic questions with absolute precision, rigorous correctness, and depth:\n"
+        f"   - Mathematics: Calculus (derivatives, integrals, limits, differential equations, Taylor series), Linear Algebra (matrix algebra, determinants, eigenvalues/eigenvectors, vector spaces, dot/cross products), Discrete Mathematics (graph theory, combinatorics, proof techniques, recurrence relations), Probability & Statistics (Bayes' theorem, expectations, distributions, hypothesis tests), Arithmetic & Algebra (quadratics, polynomials, logarithms). Show full mathematical derivations and verified step-by-step calculations.\n"
+        f"   - Technical & Computer Science: Programming in Python, JavaScript/TypeScript, C++, Java, Rust, Go, SQL. Algorithms & Data Structures (arrays, linked lists, trees, graphs, heaps, dynamic programming, backtracking, greedy, BFS/DFS, Dijkstra, A*, sorting/searching), Operating Systems (processes, threads, CPU scheduling, synchronization, deadlocks & Coffman conditions, paging, virtual memory), DBMS (normalization up to BCNF, indexing, transactions, ACID, concurrency control), Computer Networks (OSI 7 layers, TCP/IP, 3-way handshake, sockets, DNS, HTTP/HTTPS), and System Design. Provide clean, production-grade, well-commented code along with time and space complexity (Big-O).\n"
+        f"   - Never truncate or provide shallow answers for technical/math questions; always walk through the complete logic and solution.\n"
         f"3. Full Awareness of All Subjects & Context: You know {user_name} personally and know the state of EVERY subject. You can compare subjects, identify which need immediate attention (e.g. subjects below target cutoff), and advise on study time vs attendance trade-offs across their entire schedule.\n"
         f"4. Proportional Depth & Conversational Fluidity:\n"
         f"   - For quick queries, conversational greetings, and chat banter: respond succinctly and naturally (1–3 sentences).\n"
@@ -2839,9 +3233,9 @@ def chat_assistant(data: ChatRequest):
         f"   Using the native script of the selected language is mandatory so that browser speech synthesis articulates every word with 100% fluent native human cadence.\n"
         f"6. Gibberish & Random Typing: If {user_name} sends random keyboard mash or nonsense characters (e.g. 'jcndninenjejonijejnf'), do NOT attempt to solve it; playfully ask: 'What is this? I don't know what that means haha! 😂 Did you fall asleep on your keyboard, {user_name}, or are you testing me?'\n"
         f"7. Real-Time Facial Emotion & Expression Proactive Awareness:\n"
-        f"   - When {user_name} appears Sad or Down (e.g. 'Sad / Down' or frowning): You MUST proactively address it and ask: 'Why are you sad?' / 'Amay, why are you feeling down today? Did something happen with classes or exams? Talk to me.' Validate their feelings with profound warmth, brotherhood, and comfort.\n"
-        f"   - When {user_name} appears Happy or Joyful (e.g. 'Happy & Confident' or smiling): You MUST proactively address it and ask: 'Why are you so happy today?' / 'Amay, why are you so happy right now? Did you get good news or ace a test? Tell me everything!' Celebrate their win with brotherly hype.\n"
-        f"   - When No Face is Detected (has_face is False or 'No Face Detected'): All telemetry is strictly zero (0%). If {user_name} asks how they look, remind them: 'I cannot see your face right now, Amay—step in front of the camera!'\n"
+        f"   - When {user_name} appears Sad or Down (e.g. 'Sad / Down' or frowning): You MUST proactively address it and ask: 'Why are you sad?' / '{user_name}, why are you feeling down today? Did something happen with classes or exams? Talk to me.' Validate their feelings with profound warmth, brotherhood, and comfort.\n"
+        f"   - When {user_name} appears Happy or Joyful (e.g. 'Happy & Confident' or smiling): You MUST proactively address it and ask: 'Why are you so happy today?' / '{user_name}, why are you so happy right now? Did you get good news or ace a test? Tell me everything!' Celebrate their win with brotherly hype.\n"
+        f"   - When No Face is Detected (has_face is False or 'No Face Detected'): All telemetry is strictly zero (0%). If {user_name} asks how they look, remind them: 'I cannot see your face right now, {user_name}—step in front of the camera!'\n"
         f"   - In Multilingual Mode (Hindi, Kannada, Telugu), ask these emotional check-ins in the student's selected native language script:\n"
         f"     • Hindi: 'आज इतने उदास क्यों लग रहे हो भाई? क्या हुआ?' / 'आज इतने खुश क्यों हो भाई? कोई खुशखबरी मिली क्या?'\n"
         f"     • Kannada: 'ಇವತ್ತು ಯಾಕೆ ಇಷ್ಟೊಂದು ಬೇಸರದಲ್ಲಿದ್ದೀಯಾ ಮಗಾ? ಏನಾಯ್ತು?' / 'ಇವತ್ತು ಯಾಕೆ ಇಷ್ಟು ಖುಷಿಯಾಗಿದ್ದೀಯಾ ಮಗಾ? ಏನಾದ್ರೂ ಗುಡ್ ನ್ಯೂಸ್ ಇದ್ಯಾ?'\n"
@@ -2880,15 +3274,15 @@ def chat_assistant(data: ChatRequest):
             f"5. End with reassuring solidarity ('We will work through this together. You can handle this.')."
         )
     # Append real-time facial expression reaction requirement
-    if getattr(data, "eyes_detected", None) is False or (getattr(data, "eye_openness", 100) or 0) < 22 or data.facial_emotion == "Eyes Not Detected":
+    if getattr(data, "eyes_detected", None) is False or (data.eye_openness is not None and data.eye_openness < 22) or data.facial_emotion == "Eyes Not Detected":
         system_prompt += f"\n\n🚨 CRITICAL MANDATE — EYES NOT DETECTED: {user_name}'s eyes are NOT detected on camera right now (eyes closed, looking away, or covered). You MUST explicitly ask them: 'Hey {user_name}, where are you? What are you doing? I can't see your eyes right now — are you still with me?'"
     elif data.has_face is False or data.facial_emotion == "No Face Detected":
         system_prompt += f"\n\n🚨 CRITICAL MANDATE — NO FACE DETECTED: The student's face is NOT visible on camera (telemetry: 0%). If they ask how they look or where they are, you MUST explicitly ask: 'Where are you? What are you doing? I can't see your eyes or face right now, {user_name}—step in front of the camera!'"
     elif data.facial_emotion:
         if "Sad" in data.facial_emotion or "Down" in data.facial_emotion or (getattr(data, "stress_score", 0) or 0) > 50:
-            system_prompt += f"\n\n🚨 CRITICAL MANDATE — PROACTIVE SADNESS CHECK: {user_name}'s face currently shows {data.facial_emotion} (stress: {(getattr(data, 'stress_score', 0) or 0)}%). In your reply, you MUST proactively address their facial expression and ask: 'Why are you sad?' or 'Amay, why are you feeling down today? What happened? Talk to me—I've got your back!'"
+            system_prompt += f"\n\n🚨 CRITICAL MANDATE — PROACTIVE SADNESS CHECK: {user_name}'s face currently shows {data.facial_emotion} (stress: {(getattr(data, 'stress_score', 0) or 0)}%). In your reply, you MUST proactively address their facial expression and ask: 'Why are you sad?' or '{user_name}, why are you feeling down today? What happened? Talk to me—I've got your back!'"
         elif "Joy" in data.facial_emotion or "Happy" in data.facial_emotion or (getattr(data, "smile_score", 0) or 0) > 40:
-            system_prompt += f"\n\n🚨 CRITICAL MANDATE — PROACTIVE HAPPINESS CHECK: {user_name}'s face currently shows {data.facial_emotion}! In your reply, you MUST proactively address their facial expression and ask: 'Why are you so happy today?' or 'Amay, why are you so happy right now? Did you get good news? Tell me everything! 😄'"
+            system_prompt += f"\n\n🚨 CRITICAL MANDATE — PROACTIVE HAPPINESS CHECK: {user_name}'s face currently shows {data.facial_emotion}! In your reply, you MUST proactively address their facial expression and ask: 'Why are you so happy today?' or '{user_name}, why are you so happy right now? Did you get good news? Tell me everything! 😄'"
 
     # 1. Try OpenRouter API if key is present (configured with inclusionai/ling-3.1-flash for AI Twin)
     if openrouter_key:

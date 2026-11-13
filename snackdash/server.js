@@ -257,7 +257,7 @@ app.post('/api/chat/ai', async (req, res) => {
 
     try {
         // Build role-specific system prompt with live data
-        let systemPrompt = `You are SnackBot, a friendly and helpful AI assistant for SnackDash – a premium snack ordering service designed and created by Amay Vikram Singh (CEO & Designer).
+        let systemPrompt = `You are SnackBot, a friendly and helpful AI assistant for SnackDash – a premium snack ordering service founded and created by Jayanth, Gaurav, and Ansh.
 
 Menu: Maggi ₹25, Yippee ₹25, Cheese Macaroni ₹50, Masala Penne ₹50, Mushroom Penne ₹50, Dark Fantasy ₹15, Madangles S ₹35, Madangles L ₹70.
 Delivery time: 5-10 minutes.`;
@@ -293,7 +293,7 @@ You can help staff with: checking order details, inventory levels, revenue analy
         } else {
             systemPrompt += `
 You help customers with menu info, order status, delivery time, and recommendations. Keep responses short and friendly.
-If asked who made SnackDash, credit Amay Vikram Singh as CEO & Designer.`;
+If asked who made SnackDash or who the founders are, credit Jayanth, Gaurav, and Ansh as the founders.`;
         }
 
         const messages = [
@@ -324,6 +324,10 @@ If asked who made SnackDash, credit Amay Vikram Singh as CEO & Designer.`;
 
         if (!apiRes.ok) {
             console.error('OpenRouter Error:', apiRes.status, data);
+            const lowerMsg = (message || '').toLowerCase();
+            if (lowerMsg.includes('who made') || lowerMsg.includes('founder') || lowerMsg.includes('created by') || lowerMsg.includes('who created')) {
+                return res.json({ success: true, reply: 'SnackDash was founded and created by Jayanth, Gaurav, and Ansh!' });
+            }
             if (apiRes.status === 401) {
                 return res.json({ success: true, reply: 'My brain is offline. The OpenRouter API key has expired or is invalid. Please update OPENROUTER_API_KEY in the server!' });
             }
@@ -335,6 +339,10 @@ If asked who made SnackDash, credit Amay Vikram Singh as CEO & Designer.`;
         res.json({ success: true, reply });
     } catch (err) {
         console.error('AI chat error:', err.message);
+        const lowerMsg = (message || '').toLowerCase();
+        if (lowerMsg.includes('who made') || lowerMsg.includes('founder') || lowerMsg.includes('created by') || lowerMsg.includes('who created')) {
+            return res.json({ success: true, reply: 'SnackDash was founded and created by Jayanth, Gaurav, and Ansh!' });
+        }
         res.json({ success: true, reply: `I'm having trouble connecting to my AI brain. Error: ${err.message}` });
     }
 });

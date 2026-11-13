@@ -40,8 +40,12 @@ export const metadata: Metadata = {
     "Indic Voice Consultant",
     "Privacy-First Student Dashboard",
   ],
-  authors: [{ name: "Amay Vikram Singh & AI Digital Twin Team" }],
-  creator: "Amay Vikram Singh",
+  authors: [
+    { name: "Jayanth" },
+    { name: "Gaurav" },
+    { name: "Ansh" },
+  ],
+  creator: "Jayanth, Gaurav, and Ansh",
   publisher: "Student AI Systems",
   formatDetection: {
     email: false,

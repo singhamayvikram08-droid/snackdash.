@@ -733,7 +733,7 @@ export default function Dashboard() {
   const chatTimestampsRef = useRef<number[]>([]);
   const lastChatSubmitTimeRef = useRef<number>(0);
   const [messages, setMessages] = useState<{ role: string, content: string }[]>([
-    { role: 'msg-ai', content: "Hey there! I'm your Digital Twin—your co-pilot through college life. Ask me anything about your attendance, safe bunks, exams, or how you're holding up today!" }
+    { role: 'msg-ai', content: "Hey there! I'm Veccna, your AI Digital Twin—your co-pilot through college life. Ask me anything about your attendance, safe bunks, exams, technical problems, or mathematics!" }
   ]);
   const [videoMessages, setVideoMessages] = useState<{ role: string, content: string }[]>([
     { role: 'msg-ai', content: "Hey partner! Great seeing you face-to-face. I'm right here with you—ask me anything about your courses, attendance planning, or study prep!" }
@@ -962,7 +962,7 @@ export default function Dashboard() {
       flag: '🇬🇧',
       subtitle: 'Energetic student co-pilot tone with clear technical and mathematical articulation',
       sample: "Hey partner! You're in a great spot with attendance.",
-      testPhrase: "Hello! I'm your AI Digital Twin, ready to guide your attendance planning and exam preparation."
+      testPhrase: "Hello! I'm Veccna, your AI Digital Twin, ready to guide your attendance planning, exam preparation, and technical problem-solving."
     },
     {
       id: 'kn',
@@ -5440,7 +5440,7 @@ export default function Dashboard() {
               </div>
               <h4 style={{ fontSize: "0.92rem", fontWeight: 700, margin: 0, display: "flex", alignItems: "center", gap: "0.45rem", color: "var(--text-primary)", whiteSpace: "nowrap", flexShrink: 0 }}>
                 <i className="fa-solid fa-robot" style={{ color: "var(--accent-cyan)", fontSize: "0.95rem" }}></i>
-                <span>AI Chat Bot</span>
+                <span>Veccna AI</span>
                 <span
                   className="live-pulse-dot"
                   title="Active"
@@ -6932,7 +6932,7 @@ export default function Dashboard() {
             color: "var(--text-muted)",
           }}
         >
-          <div className="portal-footer-copy">© 2026 Student AI Digital Twin Systems • Academic Guidance Architecture</div>
+          <div className="portal-footer-copy">© 2026 Student AI Digital Twin Systems • Founded by Jayanth, Gaurav &amp; Ansh • Academic Guidance Architecture</div>
           <div className="portal-footer-meta" style={{ display: "flex", gap: "1rem", alignItems: "center", flexWrap: "wrap" }}>
             <span>Strictly Advisory • Official ERP Records Prevail</span>
             <span style={{ color: "var(--accent-cyan)", fontWeight: 600 }}>v2.4.0 Production</span>
